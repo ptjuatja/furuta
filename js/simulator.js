@@ -364,9 +364,13 @@
     // tabs
     document.querySelectorAll(".sim-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
-        document.querySelectorAll(".sim-tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".sim-tab").forEach((t) => {
+          t.classList.remove("active");
+          t.setAttribute("aria-selected", "false");
+        });
         document.querySelectorAll(".sim-tabpane").forEach((p) => p.classList.remove("active"));
         tab.classList.add("active");
+        tab.setAttribute("aria-selected", "true");
         $(tab.dataset.tab).classList.add("active");
       });
     });

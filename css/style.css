@@ -63,7 +63,7 @@ a:hover { color: var(--signal-red); }
 .display em { font-style: italic; font-weight: 500; }
 .section-title { font-size: clamp(30px, 4.4vw, 44px); line-height: 1.08; letter-spacing: -0.015em; margin: 0 0 8px; }
 .section-title em { font-style: italic; font-weight: 500; }
-.h3 { font-size: 22px; line-height: 1.3; letter-spacing: -0.01em; margin: 24px 0 10px; }
+.h3 { font-size: 24px; line-height: 1.3; letter-spacing: -0.01em; margin: 24px 0 10px; }
 
 /* ---------- grid paper ---------- */
 .grid-paper {
@@ -148,7 +148,7 @@ a:hover { color: var(--signal-red); }
 }
 .hero-sub { max-width: 54ch; font-size: 17px; color: var(--ink-soft); margin: 0 0 28px; }
 .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
-.hero-spec { list-style: none; display: flex; gap: 22px; padding: 0; margin: 0; font-size: 12px; color: var(--ink-faint); }
+.hero-spec { list-style: none; display: flex; gap: 22px; padding: 0; margin: 0; font-size: 12px; color: var(--ink-soft); }
 .hero-spec li { position: relative; }
 .hero-spec li + li::before { content: "·"; position: absolute; left: -13px; color: var(--grid-major); }
 
@@ -162,7 +162,7 @@ a:hover { color: var(--signal-red); }
 }
 .fig-frame.wide { height: 380px; }
 .fig-frame:not(.wide):not(.block-diagram) { height: 340px; }
-.fig-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 12px; }
+.fig-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-soft); font-size: 12px; }
 figure { margin: 0; }
 figcaption { font-size: 12px; color: var(--ink-soft); margin-top: 10px; }
 
@@ -285,7 +285,14 @@ figcaption { font-size: 12px; color: var(--ink-soft); margin-top: 10px; }
 .sim-time { font-size: 12px; color: var(--ink-soft); }
 
 .sim-main { display: grid; grid-template-columns: 1fr 320px; min-height: 560px; }
-.sim-viewport { position: relative; background: var(--paper); min-height: 520px; cursor: crosshair; }
+.sim-viewport { position: relative; min-height: 520px; cursor: crosshair;
+  background-image:
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(var(--grid-major) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--grid-major) 1.5px, transparent 1.5px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-color: var(--paper); }
 .sim-viewport canvas { display: block; width: 100%; height: 100%; }
 .sim-view-controls {
   position: absolute; top: 12px; left: 12px; z-index: 5;
@@ -294,7 +301,7 @@ figcaption { font-size: 12px; color: var(--ink-soft); margin-top: 10px; }
 .view-presets { display: flex; gap: 6px; background: var(--paper-card); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 4px; box-shadow: 0 1px 0 rgba(34,48,60,.06); }
 .sim-hud {
   position: absolute; bottom: 12px; left: 12px; z-index: 5;
-  font-size: 11px; color: var(--ink-faint);
+  font-size: 11px; color: var(--ink-soft);
   background: rgba(253,251,246,.85); border: 1px solid var(--hairline);
   border-radius: var(--radius-sm); padding: 4px 10px; pointer-events: none;
 }
@@ -360,7 +367,7 @@ input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius
 .sim-telemetry { display: flex; flex-wrap: wrap; gap: 6px 28px; padding: 8px 18px 12px; border-top: 1px solid var(--hairline); }
 .tele-row { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; color: var(--ink-soft); }
 .tele-row b { color: var(--ink); font-weight: 500; min-width: 62px; text-align: right; }
-.tele-row span { color: var(--ink-faint); }
+.tele-row span { color: var(--ink-soft); }
 
 /* ---------- footer ---------- */
 .footer {
@@ -387,9 +394,9 @@ input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius
 .footer-text { font-size: 13px; color: var(--ink-soft); margin: 0; max-width: 30ch; }
 .footer-spec {
   max-width: 1200px; margin: 0 auto; padding: 18px 24px;
-  border-top: 1px solid var(--hairline); font-size: 12px; color: var(--ink-faint);
+  border-top: 1px solid var(--hairline); font-size: 12px; color: var(--ink-soft);
 }
-.footer-copy { max-width: 1200px; margin: 0 auto; padding: 0 24px 28px; font-size: 12px; color: var(--ink-faint); }
+.footer-copy { max-width: 1200px; margin: 0 auto; padding: 0 24px 28px; font-size: 12px; color: var(--ink-soft); }
 
 /* ---------- svg-fill figures ---------- */
 .svg-fill { position: absolute; inset: 0; padding: 10px; }

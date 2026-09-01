@@ -12,7 +12,7 @@
   const macros = {
     "\\vb": "\\underset{\\tilde{} }{\\mathbf{#1}}",
     "\\mb": "\\underline{\\mathbf{#1}}",
-    "\\bas": "\\{ \\mathbf{#1}{}_i \\}",
+    "\\bas": "\\{ \\underset{\\tilde{} }{\\mathbf{#1}}{}_i \\}",
     "\\bomega": "\\underset{\\tilde{} }{\\boldsymbol{\\omega}}",
     "\\upomega": "\\omega",
     "\\uptau": "\\boldsymbol{\\tau}",
