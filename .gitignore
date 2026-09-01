@@ -1,5 +1,4 @@
 test/e2e/node_modules/
 test/e2e/package-lock.json
-test/e2e/package.json
 node_modules/
 *.log

@@ -1,0 +1,11 @@
+{
+  "name": "furuta-pendulum-e2e",
+  "private": true,
+  "description": "Headless-Chrome end-to-end tests for the Furuta Pendulum Lab site",
+  "scripts": {
+    "test": "node site.test.js && node visual.test.js"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^22.0.0"
+  }
+}
