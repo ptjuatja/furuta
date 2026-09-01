@@ -232,7 +232,7 @@
   /* discrete LQR via Riccati iteration (DARE), returns feedback K (1x4) */
   function lqrDiscrete(Ad, Bd, Q, R, maxIter, tol) {
     maxIter = maxIter || 8000;
-    tol = tol || 1e-12;
+    tol = tol || 1e-9;
     const n = Ad.length;
     const I = matEye(n);
     let P = Q.map((r) => r.slice());
@@ -250,7 +250,9 @@
       const BF = mmul(Bd, [Fv]);              // n x 1 * 1 x n -> n x n
       const AminusBF = msub(Ad, BF);
       const Pnew = madd(mmul(AtP, AminusBF), Q);
-      if (mmaxabs(msub(Pnew, P)) < tol) { P = Pnew; return { K: Fv, P, it }; }
+      // relative convergence: the absolute scale of P varies widely with Q/R
+      const scale = Math.max(1, mmaxabs(P));
+      if (mmaxabs(msub(Pnew, P)) < tol * scale) { P = Pnew; return { K: Fv, P, it }; }
       P = Pnew;
     }
     // fall back to last iterate

@@ -305,7 +305,7 @@
     bindSlider("q-theta", "v-qtheta", (v) => String(Math.round(v)), (v) => { ctrl.Q[1][1] = v; recomputeGains(); });
     bindSlider("q-dphi", "v-qdphi", (v) => String(Math.round(v)), (v) => { ctrl.Q[2][2] = v; recomputeGains(); });
     bindSlider("q-dtheta", "v-qdtheta", (v) => v.toFixed(1), (v) => { ctrl.Q[3][3] = v; recomputeGains(); });
-    bindSlider("q-r", "v-qr", (v) => v.toFixed(3), (v) => { ctrl.R = v; recomputeGains(); });
+    bindSlider("q-r", "v-qr", (v) => (v >= 1 ? v.toFixed(1) : v >= 0.1 ? v.toFixed(2) : v.toFixed(3)), (v) => { ctrl.R = v; recomputeGains(); });
 
     // PID gains
     bindSlider("pid-kpphi", "v-pidkpphi", (v) => v.toFixed(2), (v) => { ctrl.pid.kpPhi = v; });
@@ -337,7 +337,14 @@
         document.querySelectorAll("#pump-mode .seg-btn").forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
         ctrl.pump = b.dataset.pump;
-        $("kE-row").style.opacity = ctrl.pump === "prop" ? 1 : 0.45;
+        const prop = ctrl.pump === "prop";
+        $("kE-row").style.opacity = prop ? 1 : 0.45;
+        $("pump-note").style.display = prop ? "block" : "none";
+        if (prop) {
+          // proportional pumping needs a high gain (verified): nudge k_E to 16, k_arm to 0.02
+          const ke = $("p-kE"); ke.value = 16; ke.dispatchEvent(new Event("input", { bubbles: true }));
+          const ka = $("p-kArm"); ka.value = 0.02; ka.dispatchEvent(new Event("input", { bubbles: true }));
+        }
       });
     });
     $("noise-toggle").addEventListener("change", (e) => { ctrl.noise.on = e.target.checked; });
@@ -459,6 +466,7 @@
       kick: () => { if (sim.state) sim.state.phd += sim.kickStrength; },
       setStartMode: (m) => { sim.startMode = m; $("start-mode").value = m; reset(); },
       get gains() { return ctrl.K; },
+      getCfg: () => ({ Q: ctrl.Q.map((r) => r.slice()), R: ctrl.R, mode: ctrl.mode, pump: ctrl.pump, K: ctrl.K.slice() }),
       setSpeed: (v) => { sim.speed = v; $("sim-speed").value = v; $("sim-speed-val").textContent = v.toFixed(2) + "×"; },
       setNoise: (on, lvl) => { ctrl.noise.on = on; if (lvl != null) { ctrl.noise.level = lvl; $("p-noise").value = lvl; } },
       setKick: (v) => { sim.kickStrength = v; },

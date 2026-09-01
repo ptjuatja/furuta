@@ -580,10 +580,10 @@
           </div>
 
           <div id="lqr-controls">
-            <p class="caption">LQR weights (recomputed live)</p>
+            <p class="caption">LQR weights (recomputed live) — gains saturate near the torque limit; soften visibly with R ≳ 1</p>
             <div class="slider-row">
               <label class="ui-label">q<sub>φ</sub></label>
-              <input type="range" id="q-phi" aria-label="LQR weight q_phi" min="10" max="1500" step="10" value="300" />
+              <input type="range" id="q-phi" aria-label="LQR weight q_phi" min="10" max="3000" step="10" value="300" />
               <span class="mono val" id="v-qphi">300</span>
             </div>
             <div class="slider-row">
@@ -603,7 +603,7 @@
             </div>
             <div class="slider-row">
               <label class="ui-label">R</label>
-              <input type="range" id="q-r" aria-label="LQR weight R" min="0.002" max="0.2" step="0.002" value="0.012" />
+              <input type="range" id="q-r" aria-label="LQR weight R" min="0.002" max="5" step="0.005" value="0.012" />
               <span class="mono val" id="v-qr">0.012</span>
             </div>
           </div>
@@ -642,13 +642,14 @@
           </div>
 
           <p class="caption" style="margin-top:16px">Swing-up</p>
+          <p class="der-note caption" id="pump-note" style="display:none">Proportional pumping is gentler but needs a high gain — k<sub>E</sub> is set to 16 for you; tune 8–24.</p>
           <div class="seg" id="pump-mode">
             <button class="seg-btn active" data-pump="bang">Bang–bang</button>
             <button class="seg-btn" data-pump="prop">Proportional</button>
           </div>
           <div class="slider-row" id="kE-row">
             <label class="ui-label">k<sub>E</sub></label>
-            <input type="range" id="p-kE" aria-label="Swing-up gain k_E" min="0.5" max="8" step="0.1" value="4.0" />
+            <input type="range" id="p-kE" aria-label="Swing-up gain k_E" min="0.5" max="24" step="0.5" value="4.0" />
             <span class="mono val" id="v-kE">4.0</span>
           </div>
           <div class="slider-row">
