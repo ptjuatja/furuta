@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>§3 Build Guide — Furuta Pendulum Visualization Lab</title>
+<meta name="description" content="Interactive 3D simulator and derivation for a rotary self-balancing inverted (Furuta) pendulum with LQR control." />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="lib/fonts.css" />
+<link rel="stylesheet" href="lib/katex.min.css" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar" id="navbar">
+  <a class="nav-brand" href="index.html">
+    <img src="assets/logo.svg" alt="Furuta Pendulum Lab logo" width="30" height="30" />
+    <span class="nav-brand-name"> <em>Furuta</em> Pendulum Visualization Lab</span>
+    <span class="nav-brand-kicker">ROTARY SELF-BALANCING INVERTED PENDULUM</span>
+  </a>
+  <div class="nav-links">
+    <a href="system.html">System</a>
+    <a href="derivation.html">Derivation</a>
+    <a href="build.html" class="active">Build Guide</a>
+  </div>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open Simulator &#9654;</a>
+  <button class="nav-burger" id="nav-burger" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</nav>
+<div class="nav-drawer" id="nav-drawer">
+  <a href="system.html">System</a>
+  <a href="derivation.html">Derivation</a>
+  <a href="build.html" class="active">Build Guide</a>
+  <a href="simulator.html">Simulator</a>
+</div>
+
+<main id="top">
+
+<!-- ============================= BUILD GUIDE ============================= -->
+<section class="section" id="build">
+  <div class="section-head">
+    <p class="kicker">§ 3 — HOW TO BUILD IT IN REAL LIFE</p>
+    <h2 class="section-title">From CAD to <em>balancing</em> hardware</h2>
+  </div>
+
+  <figure class="full-figure">
+    <div class="fig-frame blueprint" id="fig-blueprint"></div>
+    <figcaption class="mono">Fig. 4 — Physical blueprint: acrylic base, standoffs, mid-plate, DC motor, rotary arm with joint encoder S, pendulum, Arduino-class controller and motor driver (red/blue dashed = wiring).</figcaption>
+  </figure>
+
+  <div class="build-grid">
+    <div class="build-card">
+      <p class="kicker">3.1 — MECHANICAL</p>
+      <h3 class="h3">The rig</h3>
+      <ul class="build-list">
+        <li><strong>Base &amp; frame:</strong> acrylic base plate, four brass standoffs, a mid-plate for the electronics, and a top plate that carries the motor.</li>
+        <li><strong>Motor:</strong> a high-torque, low-backlash DC motor (a NEMA-17-class geared motor or small planetary DC servo). Backlash here is death — the joint feels like a stiff spring in the hand during tuning.</li>
+        <li><strong>Rotary arm (B, length l<sub>B</sub>):</strong> lightweight and rigid — carbon-fibre tube, 3D-printed PETG or aluminium. A yoke (two small side plates) at its tip holds the pendulum axle.</li>
+        <li><strong>Pendulum (A, length l<sub>A</sub>):</strong> the same light-rigid philosophy; keep its inertia low (<span class="math">J{}_\varphi</span> small) for a snappy response.</li>
+        <li><strong>Bearings:</strong> ball bearings at O and S; the model neglects friction, so you should minimise it.</li>
+      </ul>
+    </div>
+    <div class="build-card">
+      <p class="kicker">3.2 — ELECTRONICS</p>
+      <h3 class="h3">Brain &amp; senses</h3>
+      <ul class="build-list">
+        <li><strong>Microcontroller:</strong> a Teensy 4.0/4.1 or ESP32 — you want fast floating point and hardware interrupts at a 200–500 Hz loop; a plain Uno struggles.</li>
+        <li><strong>Motor driver:</strong> fast-switching H-bridge (BTS7960 or Cytron MD10C) for the high transient currents during swing-up.</li>
+        <li><strong>Arm encoder (θ):</strong> on the motor shaft, ≥ 1000 PPR.</li>
+        <li><strong>Pendulum encoder (φ):</strong> at joint S — the critical sensor; an optical encoder ≥ 2000 PPR so <span class="math">\dot{\varphi}</span> stays usable.</li>
+        <li><strong>Power:</strong> a supply that can deliver the swing-up transients without sagging.</li>
+      </ul>
+    </div>
+    <div class="build-card">
+      <p class="kicker">3.3 — CONTROL ARCHITECTURE</p>
+      <h3 class="h3">The same FSM the simulator runs</h3>
+      <p class="build-text">
+        Because the system is severely nonlinear, no single linear controller spans the whole state
+        space. The simulator implements a finite-state machine — an energy-pumping swing-up outside
+        the capture zone, and a balance controller inside it. Balance is a <strong>full-state LQR</strong>
+        computed live from the linearization of §2.5. It is sign-corrected for the derivation's basis
+        convention.
+      </p>
+      <pre class="code-block"><code><span class="c-comment">// 200 Hz control loop, dt = 5 ms</span>
+<span class="c-kw">void</span> controlLoop() {
+  readEncoders();                <span class="c-comment">// hardware interrupts, quadrature</span>
+  dPhi = lpf(phi - phi_old, dt); <span class="c-comment">// α ≈ 0.1–0.3</span>
+  <span class="c-kw">if</span> (abs(phi) &lt; 0.30) {
+    <span class="c-comment">// BALANCE — full-state LQR</span>
+    torque = -K[0]*phi - K[1]*theta
+           - K[2]*dPhi - K[3]*dTheta;
+  } <span class="c-kw">else</span> {
+    <span class="c-comment">// SWING-UP — energy pump</span>
+    E = 0.5*Jphi*dPhi*dPhi
+      + mA*g*lA/2*(cos(phi) - 1);
+    torque = Mmax * sign(-E * dPhi * cos(phi));
+    torque -= kArm * dTheta;     <span class="c-comment">// anti wind-up</span>
+  }
+  torque = constrain(torque, -Mmax, Mmax);
+  setMotorPWM(torque);
+}</code></pre>
+    </div>
+  </div>
+
+  <div class="build-grid">
+    <div class="build-card">
+      <p class="kicker">3.4 — SOFTWARE STEPS</p>
+      <h3 class="h3">From raw ticks to torque</h3>
+      <ol class="build-steps">
+        <li><strong>Encoders via interrupts</strong> — never <code>digitalRead</code> in the loop. Convert ticks with <span class="math">\theta = (\text{ticks}/\text{PPR})\cdot 2\pi</span>.</li>
+        <li><strong>Velocities</strong> by finite difference inside the fixed 5 ms loop, then a first-order low-pass <span class="math">\dot\varphi_{f} = \alpha \dot\varphi_{raw} + (1-\alpha)\dot\varphi_{f,old}</span>, <span class="math">\alpha \approx 0.1{-}0.3</span>.</li>
+        <li><strong>The control loop</strong> fires on a hardware timer; see the pseudocode (3.3).</li>
+        <li><strong>Direction sanity</strong> — apply a positive PWM and confirm the arm moves the way a positive <span class="math">M(t)</span> means in your frame. If the motor fights the math, the pendulum will crash violently. (The simulator's sign convention: positive <span class="math">M</span> spins the arm counterclockwise viewed from above.)</li>
+      </ol>
+    </div>
+    <div class="build-card">
+      <p class="kicker">3.5 — TUNING, PHASE BY PHASE</p>
+      <h3 class="h3">Don't skip ahead</h3>
+      <ol class="build-steps">
+        <li><strong>Phase 1 — sensors.</strong> Verify φ → 0 when the pendulum is upright; verify arm direction vs torque sign.</li>
+        <li><strong>Phase 2 — inner loop.</strong> Hold the pendulum up by hand, kill the arm terms, raise <span class="math">K_{p,\varphi}</span> until the arm fights your hand, then add <span class="math">K_{d,\varphi}</span> until it feels like a smooth stiff spring.</li>
+        <li><strong>Phase 3 — outer loop.</strong> Add a small <span class="math">K_{p,\theta}</span>: to move the arm left, the motor first jerks right to unbalance the pendulum, then chases it. Add <span class="math">K_{d,\theta}</span> to damp the base swing. Pendulum gains stay an order of magnitude above arm gains.</li>
+        <li><strong>Phase 4 — swing-up.</strong> Increase <span class="math">k_E</span> gradually. Too low: never reaches the top. Too high: overshoots with too much speed for the balance loop to catch.</li>
+        <li><strong>For LQR</strong> (this lab): keep <span class="math">\mb{Q}</span> diagonal with <span class="math">q_\varphi \gg q_\theta</span> (pendulum first), raise <span class="math">R</span> to soften torque, and verify the closed loop holds against a hand-flick. The simulator recomputes <span class="math">\mb{K}</span> live — try it in §4.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================= FOOTER ============================= -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="logo" width="34" height="34" />
+      <p class="footer-mission">See the vector. Then trust the math.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">PAGES</p>
+      <a href="system.html">System</a>
+      <a href="derivation.html">Derivation</a>
+      <a href="build.html">Build Guide</a>
+      <a href="simulator.html">Simulator</a>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">THE MODEL</p>
+      <a href="derivation.html">EoMs (Lagrange)</a>
+      <a href="derivation.html">LQR design</a>
+      <a href="build.html">Swing-up energy control</a>
+      <a href="simulator.html">RK4 @ 1 kHz</a>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">REFERENCES</p>
+      <p class="footer-text">Notation and style of the dynamics derivation of the system is based on Prof. Robert G. Parker's <em> Essential Dynamics</em> (2026) handout. </p>
+      <p class="footer-text"> Deepseek AI was used in assistance to the development of this project. </p>
+    </div>
+  </div>
+  <p class="footer-copy">Furuta Pendulum Lab · a self-balancing inverted pendulum simulator</p>
+</footer>
+
+<script src="lib/katex.min.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/math.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

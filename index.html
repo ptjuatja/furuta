@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Furuta Pendulum Lab — Rotary Self-Balancing Inverted Pendulum</title>
-<meta name="description" content="Interactive 3D simulator, derivation and build guide for a rotary self-balancing inverted (Furuta) pendulum with LQR control." />
+<title>Furuta Pendulum Visualization Lab</title>
+<meta name="description" content="Interactive 3D simulator and derivation for a rotary self-balancing inverted (Furuta) pendulum with LQR control." />
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 <link rel="stylesheet" href="lib/fonts.css" />
 <link rel="stylesheet" href="lib/katex.min.css" />
@@ -16,24 +16,24 @@
 <nav class="navbar" id="navbar">
   <a class="nav-brand" href="#top">
     <img src="assets/logo.svg" alt="Furuta Pendulum Lab logo" width="30" height="30" />
-    <span class="nav-brand-name">Furuta Pendulum Lab</span>
+    <span class="nav-brand-name"> <em>Furuta</em> Pendulum Visualization Lab</span>
     <span class="nav-brand-kicker">ROTARY SELF-BALANCING INVERTED PENDULUM</span>
   </a>
   <div class="nav-links">
-    <a href="#system">System</a>
-    <a href="#derivation">Derivation</a>
-    <a href="#build">Build Guide</a>
+    <a href="system.html">System</a>
+    <a href="derivation.html">Derivation</a>
+    <a href="build.html">Build Guide</a>
   </div>
-  <a class="btn btn-primary nav-cta" href="#simulator">Open Simulator &#9654;</a>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open Simulator &#9654;</a>
   <button class="nav-burger" id="nav-burger" aria-label="Menu">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
 </nav>
 <div class="nav-drawer" id="nav-drawer">
-  <a href="#system">System</a>
-  <a href="#derivation">Derivation</a>
-  <a href="#build">Build Guide</a>
-  <a href="#simulator">Simulator</a>
+  <a href="system.html">System</a>
+  <a href="derivation.html">Derivation</a>
+  <a href="build.html">Build Guide</a>
+  <a href="simulator.html">Simulator</a>
 </div>
 
 <main id="top">
@@ -42,8 +42,11 @@
 <header class="hero grid-paper">
   <div class="hero-inner">
     <div class="hero-copy">
-      <p class="kicker">CASE 01 — ROTARY INVERTED PENDULUM</p>
-      <h1 class="display">The <em>Furuta</em> Pendulum</h1>
+      <p class="kicker">@ptjuatja presents</p>
+      <h1 class="display">The <em>Furuta</em> Pendulum Visualization Lab</h1>
+      <p class="hero-sub">
+        Ever wonder how to connect the ideas between dynamics and control? MayThe Furuta pendulum is a classic benchmark in control theory, featuring a rotary arm driven by a single motor that balances an inverted pendulum above it.
+      </p>
       <p class="hero-sub">
         A rotary arm driven by a single motor balances an inverted pendulum above it —
         one input, two angles, a beautiful control problem. This lab walks the full arc:
@@ -51,700 +54,19 @@
         energy-based swing-up, then fly the whole thing in an interactive 3D simulator.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href="#simulator">Launch the Simulator &#9654;</a>
-        <a class="btn btn-ghost btn-lg" href="#derivation">Read the Derivation</a>
+        <a class="btn btn-primary btn-lg" href="simulator.html">Launch the Simulator &#9654;</a>
+        <a class="btn btn-ghost btn-lg" href="derivation.html">Read the Derivation</a>
       </div>
-      <ul class="hero-spec mono">
-        <li>g = 9.81 m/s²</li>
-        <li>RK4 @ 1 kHz</li>
-        <li>LQR @ 200 Hz</li>
-        <li>E = T + V</li>
-      </ul>
     </div>
     <figure class="hero-figure">
-      <div class="fig-frame" id="hero-3d"><div class="fig-loading mono">drafting figure…</div></div>
+      <div class="fig-frame" id="hero-3d"><div class="fig-loading mono"></div></div>
       <figcaption class="mono">Fig. 0 — The system, live. Drag to orbit, scroll to zoom.</figcaption>
     </figure>
   </div>
-  <p class="red-note">the engineering notebook, alive ↓</p>
+  <p class="red-note">Scroll to further understand the system! ↓</p>
 </header>
 
-<!-- ============================= SYSTEM ============================= -->
-<section class="section" id="system">
-  <div class="section-head">
-    <p class="kicker">§ 1 — THE SYSTEM</p>
-    <h2 class="section-title">One motor, two angles, <em>zero</em> patience for wobble</h2>
-  </div>
-  <div class="prose-grid">
-    <div class="prose">
-      <p>
-        The <strong>rotary self-balancing inverted pendulum</strong> — the <em>Furuta pendulum</em> —
-        is a benchmark underactuated system. A base motor applies a moment
-        <span class="math">M(t)</span> about the fixed vertical axis
-        <span class="math">\vb{E}{}_3</span>, spinning a <em>rotary arm</em> (bar B, length
-        <span class="math">l{}_B</span>, angle <span class="math">\theta(t)</span>). At the arm's tip a
-        second joint lets the <em>pendulum</em> (bar A, length <span class="math">l{}_A</span>, angle
-        <span class="math">\varphi(t)</span>) rotate freely about the arm axis
-        <span class="math">\vb{e}'{}_1</span>. Gravity acts in
-        <span class="math">-\vb{E}{}_3</span>.
-      </p>
-      <p>
-        With <span class="math">\varphi = 0</span> the pendulum stands exactly upright — an unstable
-        equilibrium that the controller must hold against gravity, sensor noise and the odd human
-        shove. With <span class="math">\varphi = \pi</span> it hangs down stably. Getting from hanging
-        to upright — <em>swing-up</em> — requires pumping energy into the pendulum through the arm;
-        staying upright requires <em>balance</em>. That two-phase job is a finite-state machine
-        (FSM), detailed in <a href="#build">§3</a> and implemented live in
-        <a href="#simulator">§4</a>.
-      </p>
-      <p>
-        The derivation below follows the setup of the accompanying project notes
-        (<em>main.tex</em>): two rigid bars, dry friction and viscous drag neglected, inertias given
-        about their reference points. Notation is kept verbatim —
-        <span class="math">\vb{r}</span> for a tilde-underlined vector,
-        <span class="math">\mb{J}</span> for an underlined matrix,
-        <span class="math">\bas{e}</span> for an orthonormal basis.
-      </p>
-    </div>
-    <div class="prose">
-      <h3 class="h3">Bases &amp; coordinates</h3>
-      <p>Three right-handed bases describe the kinematics (see also Fig. 2 in the derivation):</p>
-      <ul class="basis-list">
-        <li><span class="math">\bas{E}</span> — fixed basis at the origin <span class="math">O</span>, with <span class="math">\vb{E}{}_3</span> vertical.</li>
-        <li><span class="math">\bas{e}'</span> — <span class="math">\bas{E}</span> rotated by <span class="math">\theta</span> about <span class="math">\vb{E}{}_3</span>; <span class="math">\vb{e}'{}_1</span> points along the arm.</li>
-        <li><span class="math">\bas{e}</span> — <span class="math">\bas{e}'</span> rotated by <span class="math">\varphi</span> about <span class="math">\vb{e}'{}_1</span>; <span class="math">\vb{e}{}_3</span> lies along the pendulum.</li>
-      </ul>
-      <div class="param-card">
-        <h3 class="h3">Default hardware (slender rods)</h3>
-        <table class="param-table mono">
-          <tr><td>l<sub>A</sub> (pendulum)</td><td>0.25 m</td><td>m<sub>A</sub></td><td>0.08 kg</td></tr>
-          <tr><td>l<sub>B</sub> (arm)</td><td>0.20 m</td><td>m<sub>B</sub></td><td>0.12 kg</td></tr>
-          <tr><td>g</td><td>9.81 m/s²</td><td>control rate</td><td>200 Hz</td></tr>
-        </table>
-        <p class="caption">Inertias follow the uniform slender-rod model: <span class="math">{}^A J{}_1 = {}^A J{}_2 = m{}_A l{}_A^2/3</span>, <span class="math">{}^B J{}_3 = m{}_B l{}_B^2/3</span>, axial terms ≈ 0.</p>
-      </div>
-    </div>
-  </div>
 
-  <figure class="full-figure">
-    <div class="fig-frame wide" id="fig-system-3d"></div>
-    <figcaption class="mono">Fig. 1 — Rotary arm B and pendulum A with bases {E}, {e′}, {e}; the red arc is θ(t), the dashed arc φ(t). Click-drag to orbit.</figcaption>
-  </figure>
-</section>
-
-<!-- ============================= DERIVATION ============================= -->
-<section class="section section-deep" id="derivation">
-  <div class="section-head">
-    <p class="kicker">§ 2 — DERIVATION OF THE EQUATIONS OF MOTION</p>
-    <h2 class="section-title">From bases to <em>Lagrange</em> to a matrix model</h2>
-  </div>
-
-  <div class="derivation-block">
-    <h3 class="h3 der-title">2.1 &nbsp;Define the origin and the bases</h3>
-    <div class="prose-grid">
-      <div class="prose">
-        <p>
-          Origin <span class="math">O</span> sits on the motor axis. The bases are built by two
-          successive rotations — first <span class="math">\theta</span> about the fixed vertical, then
-          <span class="math">\varphi</span> about the (now rotated) arm axis:
-        </p>
-        <div class="math-display">
-          \bas{E} : \text{ fixed at } O; \qquad
-          \bas{e}' : \bas{E} \text{ rotated by } \theta \text{ about } \vb{E}{}_3; \qquad
-          \bas{e} : \bas{e}' \text{ rotated by } \varphi \text{ about } \vb{e}'{}_1
-        </div>
-        <p>The inertias of the two bars, about their respective reference points, are</p>
-        <div class="math-display">
-          {}^B\mb{J}^O{}_{\bas{e}'} = \mathrm{diag}({}^B J{}_1, {}^B J{}_2, {}^B J{}_3), \qquad
-          {}^A\mb{J}^S{}_{\bas{e}} = \mathrm{diag}({}^A J{}_1, {}^A J{}_2, {}^A J{}_3)
-        </div>
-        <p>
-          and the total angular velocity of bar A, expressed in
-          <span class="math">\bas{e}</span>, together with the cross products needed later, are
-        </p>
-        <div class="math-display">
-          \bomega = \dot{\theta}\,\vb{e}'{}_3 + \dot{\varphi}\,\vb{e}{}_1
-          = \dot{\varphi}\,\vb{e}{}_1 + \dot{\theta}\sin\varphi\,\vb{e}{}_2 + \dot{\theta}\cos\varphi\,\vb{e}{}_3
-        </div>
-        <div class="math-display">
-          \bomega \times \vb{e}{}_1 = -\dot{\theta}\sin\varphi\,\vb{e}{}_3 + \dot{\theta}\cos\varphi\,\vb{e}{}_2, \qquad
-          \bomega \times \vb{e}{}_3 = -\dot{\varphi}\,\vb{e}{}_2 + \dot{\theta}\sin\varphi\,\vb{e}{}_1
-        </div>
-      </div>
-      <figure class="side-figure">
-        <div class="fig-frame" id="fig-bases"></div>
-        <figcaption class="mono">Fig. 2 — Successive rotations: e′ = E rotated by θ about E₃; e = e′ rotated by φ about e′₁ (φ = 0 is upright).</figcaption>
-      </figure>
-    </div>
-  </div>
-
-  <div class="derivation-block">
-    <h3 class="h3 der-title">2.2 &nbsp;Kinematics</h3>
-    <p class="der-intro">
-      For the centre of mass of bar B (the arm), with
-      <span class="math">\vb{e}{}_1 = \vb{e}'{}_1</span>:
-    </p>
-    <div class="math-display">
-      \vb{r}{}_B = \frac{l{}_B}{2}\vb{e}'{}_1 = \frac{l{}_B}{2}\vb{e}{}_1, \qquad
-      \dot{\vb{r}}{}_B = \frac{l{}_B}{2}\dot{\vb{e}}{}_1 = \frac{l{}_B}{2}\left(-\dot{\theta}\sin\varphi\,\vb{e}{}_3 + \dot{\theta}\cos\varphi\,\vb{e}{}_2\right)
-    </div>
-    <div class="math-display">
-      \dot{\vb{r}}{}_B \cdot \dot{\vb{r}}{}_B = \frac{l{}_B^2}{4}\,\dot{\theta}^2, \qquad
-      {}^B\bomega = \dot{\theta}\,\vb{e}'{}_3, \qquad
-      {}^B\bomega \cdot {}^B\mb{J} \cdot {}^B\bomega = {}^B J{}_3\,\dot{\theta}^2
-    </div>
-    <p class="der-intro">For the centre of mass of bar A (the pendulum):</p>
-    <div class="math-display">
-      \vb{r}{}_A = \vb{r}{}_B + \frac{l{}_A}{2}\vb{e}{}_3 = l{}_B\,\vb{e}{}_1 + \frac{l{}_A}{2}\vb{e}{}_3
-    </div>
-    <div class="math-display">
-      \dot{\vb{r}}{}_A = \frac{l{}_A}{2}\dot{\theta}\sin\varphi\,\vb{e}{}_1
-      + \left[-\frac{l{}_A}{2}\dot{\varphi} + l{}_B\dot{\theta}\cos\varphi\right]\vb{e}{}_2
-      - l{}_B\dot{\theta}\sin\varphi\,\vb{e}{}_3
-    </div>
-    <div class="math-display">
-      \dot{\vb{r}}{}_A \cdot \dot{\vb{r}}{}_A = \frac{l{}_A^2}{4}\left[\dot{\theta}^2\sin^2\varphi + \dot{\varphi}^2\right]
-      + l{}_B^2\dot{\theta}^2 - l{}_A l{}_B\,\dot{\theta}\dot{\varphi}\cos\varphi
-    </div>
-    <div class="math-display">
-      {}^A\bomega = \dot{\varphi}\,\vb{e}{}_1 + \dot{\theta}\sin\varphi\,\vb{e}{}_2 + \dot{\theta}\cos\varphi\,\vb{e}{}_3, \qquad
-      {}^A\bomega \cdot {}^A\mb{J} \cdot {}^A\bomega = {}^A J{}_1\dot{\varphi}^2 + {}^A J{}_2\dot{\theta}^2\sin^2\varphi + {}^A J{}_3\dot{\theta}^2\cos^2\varphi
-    </div>
-    <p class="der-note">
-      The arm is not inert: as the pendulum swings, angular momentum about the vertical is shared,
-      so the arm rotates in opposition — the effective pendulum inertia about the hanging
-      equilibrium is the Schur complement <span class="math">J{}_\varphi - L^2/J{}_\theta</span>, not
-      <span class="math">J{}_\varphi</span>. In the simulator, release the pendulum from a small tilt with
-      control off and watch the arm counter-rotate in step.
-    </p>
-  </div>
-
-  <div class="derivation-block">
-    <h3 class="h3 der-title">2.3 &nbsp;Forces and energy</h3>
-    <p>
-      The only conservative force is gravity on bar A — bar B never changes height, so it drops out
-      of the potential. The non-conservative actuator moment is
-      <span class="math">\vb{M} = M(t)\vb{E}{}_3</span>; constraint forces do no work.
-    </p>
-    <div class="math-display">
-      T = \frac{1}{2}m{}_A\,\dot{\vb{r}}{}_A\cdot\dot{\vb{r}}{}_A + \frac{1}{2}m{}_B\,\dot{\vb{r}}{}_B\cdot\dot{\vb{r}}{}_B
-      + \frac{1}{2}\,{}^A\bomega\cdot{}^A\mb{J}\cdot{}^A\bomega + \frac{1}{2}\,{}^B\bomega\cdot{}^B\mb{J}\cdot{}^B\bomega
-    </div>
-    <div class="math-display">
-      T = \frac{1}{2}m{}_A\!\left(\frac{l{}_A^2}{4}\left[\dot{\theta}^2\sin^2\varphi + \dot{\varphi}^2\right]
-      + l{}_B^2\dot{\theta}^2 - l{}_A l{}_B\,\dot{\theta}\dot{\varphi}\cos\varphi\right)
-      + \frac{1}{2}m{}_B\frac{l{}_B^2}{4}\dot{\theta}^2
-      + \frac{1}{2}\left({}^A J{}_1\dot{\varphi}^2 + \left[{}^A J{}_2\sin^2\varphi + {}^A J{}_3\cos^2\varphi + {}^B J{}_3\right]\dot{\theta}^2\right)
-    </div>
-    <div class="math-display">
-      V = m{}_A g\,\vb{E}{}_3 \cdot \vb{r}{}_A = m{}_A g \frac{l{}_A}{2}\cos\varphi
-    </div>
-  </div>
-
-  <div class="derivation-block">
-    <h3 class="h3 der-title">2.4 &nbsp;Equations of motion (Lagrange)</h3>
-    <div class="math-display">
-      \frac{d}{dt}\frac{\partial T}{\partial \dot{q}} - \frac{\partial T}{\partial q} + \frac{\partial V}{\partial q}
-      = \sum \left(\vb{F}^{nc}\cdot\frac{\partial \vb{r}}{\partial q} + \mb{M}^{nc}\cdot\frac{\partial \bomega}{\partial \dot{q}}\right)
-    </div>
-    <p>For <span class="math">q = \theta</span>, the generalized force of the actuator is
-    <span class="math">M(t)</span>, and one obtains</p>
-    <div class="math-display">
-      \left[J{}_\theta + B\sin^2\varphi\right]\ddot{\theta} + 2B\sin\varphi\cos\varphi\,\dot{\theta}\dot{\varphi}
-      - L\cos\varphi\,\ddot{\varphi} + L\sin\varphi\,\dot{\varphi}^2 = M(t)
-    </div>
-    <p>For <span class="math">q = \varphi</span>, the actuator does no work in that direction and the
-    gravity torque appears:</p>
-    <div class="math-display">
-      J{}_\varphi\ddot{\varphi} - L\cos\varphi\,\ddot{\theta} - B\dot{\theta}^2\sin\varphi\cos\varphi
-      = m{}_A g \frac{l{}_A}{2}\sin\varphi
-    </div>
-    <p>Two unknowns, two equations — the model is complete. Rewriting in matrix form,</p>
-    <div class="math-display">
-      \mb{M}\,\ddot{\vb{q}} + \mb{C}\,\dot{\vb{q}} = \vb{\uptau}, \qquad
-      \vb{q} = \begin{bmatrix} \theta \\ \varphi \end{bmatrix}, \qquad
-      \vb{\uptau} = \begin{bmatrix} M(t) \\ m{}_A g \frac{l{}_A}{2}\sin\varphi \end{bmatrix}
-    </div>
-    <p>with the shorthand terms (all constant for a given build):</p>
-    <div class="math-display">
-      J{}_\theta = m{}_A l{}_B^2 + m{}_B\frac{l{}_B^2}{4} + {}^B J{}_3 + {}^A J{}_3
-      \quad \text{(constant base inertia)}
-    </div>
-    <div class="math-display">
-      J{}_\varphi = m{}_A\frac{l{}_A^2}{4} + {}^A J{}_1
-      \quad \text{(constant pendulum inertia)}, \qquad
-      B = m{}_A\frac{l{}_A^2}{4} + {}^A J{}_2 - {}^A J{}_3
-      \quad \text{(inertia variation amplitude)}
-    </div>
-    <div class="math-display">
-      L = \frac{l{}_A l{}_B}{2}m{}_A \quad \text{(coupling magnitude)}
-    </div>
-    <p>and the mass matrix <span class="math">\mb{M}(\vb{q})</span> and Christoffel matrix
-    <span class="math">\mb{C}(\vb{q},\dot{\vb{q}})</span>:</p>
-    <div class="math-display">
-      \mb{M} = \begin{bmatrix} J{}_\theta + B\sin^2\varphi &amp; -L\cos\varphi \\ -L\cos\varphi &amp; J{}_\varphi \end{bmatrix}, \qquad
-      \mb{C} = \begin{bmatrix} B\dot{\varphi}\sin\varphi\cos\varphi &amp; B\dot{\theta}\sin\varphi\cos\varphi + L\dot{\varphi}\sin\varphi \\ -B\dot{\theta}\sin\varphi\cos\varphi &amp; 0 \end{bmatrix}
-    </div>
-    <p class="der-note">
-      The simulator integrates this exact nonlinear model with RK4 at 1 kHz. A cross-check against
-      the raw Lagrange form (2.4) agrees to machine precision, and with
-      <span class="math">M(t) = 0</span> the mechanical energy <span class="math">E = T + V</span>
-      drifts by less than <span class="math">10^{-4}</span> relative over 10 s.
-    </p>
-  </div>
-
-  <div class="derivation-block">
-    <h3 class="h3 der-title">2.5 &nbsp;Linearization about upright &amp; LQR balance</h3>
-    <p>
-      Around the upright equilibrium <span class="math">(\varphi, \dot{\varphi}, \theta, \dot{\theta}) = (0,0,0,0)</span>
-      the nonlinear model collapses to the linear state-space form
-      <span class="math">\dot{\vb{x}} = \mb{A}\vb{x} + \mb{B}M</span> with
-      <span class="math">\vb{x} = [\varphi,\ \theta,\ \dot{\varphi},\ \dot{\theta}]^{\mathsf T}</span>:
-    </p>
-    <div class="math-display">
-      \mb{A} = \begin{bmatrix} 0 &amp; 0 &amp; 1 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 1 \\ \dfrac{m{}_A g l{}_A}{2}\dfrac{J{}_\theta}{\Delta} &amp; 0 &amp; 0 &amp; 0 \\ \dfrac{m{}_A g l{}_A}{2}\dfrac{L}{\Delta} &amp; 0 &amp; 0 &amp; 0 \end{bmatrix}, \qquad
-      \mb{B} = \begin{bmatrix} 0 \\ 0 \\ \dfrac{L}{\Delta} \\ \dfrac{J{}_\varphi}{\Delta} \end{bmatrix}, \qquad
-      \Delta = J{}_\theta J{}_\varphi - L^2
-    </div>
-    <p>
-      Note the structure: <span class="math">\varphi</span> feeds both rows (gravity pulls the
-      pendulum over; the lean also torques the arm), <span class="math">\theta</span> is a pure
-      integrator, and the torque enters both accelerations through the coupling. The pair is
-      controllable (rank of the controllability matrix is 4).
-    </p>
-    <p>LQR chooses <span class="math">M = -\mb{K}\vb{x}</span> to minimize</p>
-    <div class="math-display">
-      J = \int_0^\infty \left(\vb{x}^{\mathsf T}\mb{Q}\vb{x} + R\,M^2\right) dt
-    </div>
-    <div class="math-display">
-      \mb{K} = R^{-1}\mb{B}^{\mathsf T}\mb{P}, \qquad
-      \mb{A}^{\mathsf T}\mb{P} + \mb{P}\mb{A} - \mb{P}\mb{B}R^{-1}\mb{B}^{\mathsf T}\mb{P} + \mb{Q} = \mb{0}
-    </div>
-    <p>
-      The Riccati equation is solved at runtime by iterating its discrete-time equivalent at the
-      200 Hz control rate, so the gains adapt instantly when you change
-      <span class="math">\mb{Q}</span>, <span class="math">R</span> or the hardware in the simulator.
-      The default weights
-      <span class="math">\mb{Q} = \mathrm{diag}(300,\ 25,\ 5,\ 1.5)</span>, <span class="math">R = 0.012</span>
-      place the closed-loop pendulum poles well inside the unit circle with a healthy torque margin.
-    </p>
-    <figure class="full-figure">
-      <div class="fig-frame block-diagram" id="fig-lqr"></div>
-      <figcaption class="mono">Fig. 3 — LQR balance loop: the state x = [φ, θ, φ̇, θ̇] is fed back through K at 200 Hz; the torque is saturated at ±M_max by the motor.</figcaption>
-    </figure>
-  </div>
-
-  <div class="derivation-block">
-    <h3 class="h3 der-title">2.6 &nbsp;Swing-up: energy control</h3>
-    <p>
-      LQR only works near the upright. Starting from hanging (<span class="math">\varphi = \pi</span>)
-      we pump energy into the pendulum with the arm, using the pendulum energy with datum at the
-      upright:
-    </p>
-    <div class="math-display">
-      E = \frac{1}{2}J{}_\varphi\dot{\varphi}^2 + m{}_A g \frac{l{}_A}{2}\left(\cos\varphi - 1\right)
-      \qquad \Rightarrow \qquad E_{ref} = 0
-    </div>
-    <div class="math-display">
-      M_{swing}(t) = -k{}_E \cdot E \cdot \operatorname{sgn}\left(\dot{\varphi}\cos\varphi\right)
-    </div>
-    <p class="der-note">
-      <strong>Sign note.</strong> With the basis convention above,
-      <span class="math">\dot E \propto \dot{\varphi}\cos\varphi \cdot M</span> to leading order, so the
-      minus sign makes <span class="math">E \to E_{ref}</span>: when the pendulum lacks energy the arm
-      accelerates <em>in the direction of the pendulum's swing</em> — exactly the behaviour described
-      in the project notes. (The literal sign printed there would remove energy; the verbal
-      description pins the correct one.) The simulator defaults to the saturated
-      <em>bang–bang</em> form <span class="math">M = \pm M_{max}</span> for a fast, robust swing-up,
-      with optional arm-velocity damping to stop the arm winding up.
-    </p>
-    <p>A finite-state machine ties the phases together:</p>
-    <div class="fsm-row">
-      <div class="fsm-node"><span class="mono">SWING-UP</span><span class="fsm-sub">energy pump until |φ| ≤ 0.3, |φ̇| ≤ 2.5, |θ̇| ≤ 3 (the notes' PID scheme captures at |φ| ≤ 0.2)</span></div>
-      <div class="fsm-arrow">→</div>
-      <div class="fsm-node"><span class="mono">BALANCE</span><span class="fsm-sub">pendulum-first gains, then full LQR/PID</span></div>
-      <div class="fsm-arrow-back">|φ| &gt; 0.55</div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================= BUILD GUIDE ============================= -->
-<section class="section" id="build">
-  <div class="section-head">
-    <p class="kicker">§ 3 — HOW TO BUILD IT IN REAL LIFE</p>
-    <h2 class="section-title">From CAD to <em>balancing</em> hardware</h2>
-  </div>
-
-  <figure class="full-figure">
-    <div class="fig-frame blueprint" id="fig-blueprint"></div>
-    <figcaption class="mono">Fig. 4 — Physical blueprint: acrylic base, standoffs, mid-plate, DC motor, rotary arm with joint encoder S, pendulum, Arduino-class controller and motor driver (red/blue dashed = wiring).</figcaption>
-  </figure>
-
-  <div class="build-grid">
-    <div class="build-card">
-      <p class="kicker">3.1 — MECHANICAL</p>
-      <h3 class="h3">The rig</h3>
-      <ul class="build-list">
-        <li><strong>Base &amp; frame:</strong> acrylic base plate, four brass standoffs, a mid-plate for the electronics, and a top plate that carries the motor.</li>
-        <li><strong>Motor:</strong> a high-torque, low-backlash DC motor (a NEMA-17-class geared motor or small planetary DC servo). Backlash here is death — the joint feels like a stiff spring in the hand during tuning.</li>
-        <li><strong>Rotary arm (B, length l<sub>B</sub>):</strong> lightweight and rigid — carbon-fibre tube, 3D-printed PETG or aluminium. A yoke (two small side plates) at its tip holds the pendulum axle.</li>
-        <li><strong>Pendulum (A, length l<sub>A</sub>):</strong> the same light-rigid philosophy; keep its inertia low (<span class="math">J{}_\varphi</span> small) for a snappy response.</li>
-        <li><strong>Bearings:</strong> ball bearings at O and S; the model neglects friction, so you should minimise it.</li>
-      </ul>
-    </div>
-    <div class="build-card">
-      <p class="kicker">3.2 — ELECTRONICS</p>
-      <h3 class="h3">Brain &amp; senses</h3>
-      <ul class="build-list">
-        <li><strong>Microcontroller:</strong> a Teensy 4.0/4.1 or ESP32 — you want fast floating point and hardware interrupts at a 200–500 Hz loop; a plain Uno struggles.</li>
-        <li><strong>Motor driver:</strong> fast-switching H-bridge (BTS7960 or Cytron MD10C) for the high transient currents during swing-up.</li>
-        <li><strong>Arm encoder (θ):</strong> on the motor shaft, ≥ 1000 PPR.</li>
-        <li><strong>Pendulum encoder (φ):</strong> at joint S — the critical sensor; an optical encoder ≥ 2000 PPR so <span class="math">\dot{\varphi}</span> stays usable.</li>
-        <li><strong>Power:</strong> a supply that can deliver the swing-up transients without sagging.</li>
-      </ul>
-    </div>
-    <div class="build-card">
-      <p class="kicker">3.3 — CONTROL ARCHITECTURE</p>
-      <h3 class="h3">The same FSM the simulator runs</h3>
-      <p class="build-text">
-        Because the system is severely nonlinear, no single linear controller spans the whole state
-        space. The simulator implements the project notes' finite-state machine — an energy-pumping
-        swing-up outside the capture zone, and a balance controller inside it. The notes pair the
-        swing-up with a cascaded <em>dual-PID</em> balance loop; this lab defaults to
-        <strong>LQR</strong> (computed live from the linearization of §2.5), with the dual-PID kept
-        available for comparison. Both are sign-corrected for the derivation's basis convention.
-      </p>
-      <pre class="code-block"><code><span class="c-comment">// 200 Hz control loop, dt = 5 ms</span>
-<span class="c-kw">void</span> controlLoop() {
-  readEncoders();                <span class="c-comment">// hardware interrupts, quadrature</span>
-  dPhi = lpf(phi - phi_old, dt); <span class="c-comment">// α ≈ 0.1–0.3</span>
-  <span class="c-kw">if</span> (abs(phi) &lt; 0.30) {
-    <span class="c-comment">// BALANCE — LQR or cascaded PID</span>
-    torque = -K[0]*phi - K[1]*theta
-           - K[2]*dPhi - K[3]*dTheta;
-  } <span class="c-kw">else</span> {
-    <span class="c-comment">// SWING-UP — energy pump</span>
-    E = 0.5*Jphi*dPhi*dPhi
-      + mA*g*lA/2*(cos(phi) - 1);
-    torque = Mmax * sign(-E * dPhi * cos(phi));
-    torque -= kArm * dTheta;     <span class="c-comment">// anti wind-up</span>
-  }
-  torque = constrain(torque, -Mmax, Mmax);
-  setMotorPWM(torque);
-}</code></pre>
-    </div>
-  </div>
-
-  <div class="build-grid">
-    <div class="build-card">
-      <p class="kicker">3.4 — SOFTWARE STEPS</p>
-      <h3 class="h3">From raw ticks to torque</h3>
-      <ol class="build-steps">
-        <li><strong>Encoders via interrupts</strong> — never <code>digitalRead</code> in the loop. Convert ticks with <span class="math">\theta = (\text{ticks}/\text{PPR})\cdot 2\pi</span>.</li>
-        <li><strong>Velocities</strong> by finite difference inside the fixed 5 ms loop, then a first-order low-pass <span class="math">\dot\varphi_{f} = \alpha \dot\varphi_{raw} + (1-\alpha)\dot\varphi_{f,old}</span>, <span class="math">\alpha \approx 0.1{-}0.3</span>.</li>
-        <li><strong>The control loop</strong> fires on a hardware timer; see the pseudocode (3.3).</li>
-        <li><strong>Direction sanity</strong> — apply a positive PWM and confirm the arm moves the way a positive <span class="math">M(t)</span> means in your frame. If the motor fights the math, the pendulum will crash violently. (The simulator's sign convention: positive <span class="math">M</span> spins the arm counterclockwise viewed from above.)</li>
-      </ol>
-    </div>
-    <div class="build-card">
-      <p class="kicker">3.5 — TUNING, PHASE BY PHASE</p>
-      <h3 class="h3">Don't skip ahead</h3>
-      <ol class="build-steps">
-        <li><strong>Phase 1 — sensors.</strong> Verify φ → 0 when the pendulum is upright; verify arm direction vs torque sign.</li>
-        <li><strong>Phase 2 — inner loop.</strong> Hold the pendulum up by hand, kill the arm terms, raise <span class="math">K_{p,\varphi}</span> until the arm fights your hand, then add <span class="math">K_{d,\varphi}</span> until it feels like a smooth stiff spring.</li>
-        <li><strong>Phase 3 — outer loop.</strong> Add a small <span class="math">K_{p,\theta}</span>: to move the arm left, the motor first jerks right to unbalance the pendulum, then chases it. Add <span class="math">K_{d,\theta}</span> to damp the base swing. Pendulum gains stay an order of magnitude above arm gains.</li>
-        <li><strong>Phase 4 — swing-up.</strong> Increase <span class="math">k_E</span> gradually. Too low: never reaches the top. Too high: overshoots with too much speed for the balance loop to catch.</li>
-        <li><strong>For LQR</strong> (this lab): keep <span class="math">\mb{Q}</span> diagonal with <span class="math">q_\varphi \gg q_\theta</span> (pendulum first), raise <span class="math">R</span> to soften torque, and verify the closed loop holds against a hand-flick. The simulator recomputes <span class="math">\mb{K}</span> live — try it in §4.</li>
-      </ol>
-    </div>
-  </div>
-</section>
-
-<!-- ============================= SIMULATOR ============================= -->
-<section class="section section-sim" id="simulator">
-  <div class="section-head sim-head">
-    <p class="kicker">§ 4 — THE SIMULATOR</p>
-    <h2 class="section-title">Fly the <em>math</em></h2>
-    <p class="sim-blurb">
-      The full nonlinear model of §2.4, integrated with RK4 at 1 kHz. Controller at 200 Hz.
-      Drag to orbit, right-drag to pan, scroll to zoom — just like CAD. Press play and the pendulum
-      swings up and balances itself; try a kick while it's up.
-    </p>
-  </div>
-
-  <div class="sim-shell paper-card">
-    <div class="sim-toolbar">
-      <div class="sim-tool-group">
-        <button class="icon-btn" id="btn-play" aria-label="Play or pause simulation" title="Play / Pause (Space)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path id="ico-play" d="M7 4.5v15l13-7.5z"/><path id="ico-pause" d="M7 4h4v16H7zM13 4h4v16h-4z" style="display:none"/></svg>
-        </button>
-        <button class="icon-btn" id="btn-reset" aria-label="Reset simulation" title="Reset simulation">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-        </button>
-        <button class="icon-btn" id="btn-kick" aria-label="Kick the pendulum" title="Kick the pendulum">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 11.5a8.5 8.5 0 1 1-5-7.8"/><path d="M21 3v6h-6"/></svg>
-        </button>
-        <button class="icon-btn" id="btn-kick-arm" aria-label="Kick the arm" title="Kick the arm">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18"/><path d="M17 8l4 4-4 4"/></svg>
-        </button>
-      </div>
-      <div class="sim-tool-group sim-startgroup">
-        <label class="ui-label" for="start-mode">Start</label>
-        <select id="start-mode" class="select">
-          <option value="hanging">Hanging (swing-up)</option>
-          <option value="upright" selected>Near-upright (balance)</option>
-          <option value="manual">Manual angle</option>
-        </select>
-        <div class="manual-wrap" id="manual-wrap" style="display:none">
-          <input type="range" id="manual-phi" aria-label="Manual start angle" min="0" max="180" value="120" step="5" />
-          <span class="mono" id="manual-phi-val">120°</span>
-        </div>
-      </div>
-      <div class="sim-tool-group sim-speed">
-        <label class="ui-label" for="sim-speed">Speed</label>
-        <input type="range" id="sim-speed" aria-label="Simulation speed" min="0.25" max="4" value="1" step="0.25" />
-        <span class="mono" id="sim-speed-val">1.00×</span>
-      </div>
-      <div class="sim-tool-group sim-state">
-        <span class="state-badge" id="state-badge">PAUSED</span>
-        <span class="mono sim-time" id="sim-time">t = 0.00 s</span>
-      </div>
-    </div>
-
-    <div class="sim-main">
-      <div class="sim-viewport" id="sim-viewport">
-        <div class="sim-view-controls">
-          <div class="view-presets">
-            <button class="icon-btn sm" data-view="iso" title="Isometric">◐</button>
-            <button class="icon-btn sm" data-view="top" title="Top view">⌖</button>
-            <button class="icon-btn sm" data-view="front" title="Front view">▤</button>
-            <button class="icon-btn sm" data-view="side" title="Side view">▦</button>
-          </div>
-          <label class="chip-toggle" title="Auto-rotate camera">
-            <input type="checkbox" id="view-autorotate" /><span>auto-orbit</span>
-          </label>
-        </div>
-        <div class="sim-hud mono" id="sim-hud">left-drag orbit · right-drag pan · scroll zoom</div>
-        <div class="sim-note" id="sim-note">Tip: press <b>Space</b> to play/pause, <b>K</b> to kick.</div>
-      </div>
-
-      <aside class="sim-panel">
-        <div class="sim-tabs" role="tablist">
-          <button class="sim-tab active" data-tab="tab-params" role="tab" aria-selected="true" aria-controls="tab-params">Parameters</button>
-          <button class="sim-tab" data-tab="tab-control" role="tab" aria-selected="false" aria-controls="tab-control">Control</button>
-          <button class="sim-tab" data-tab="tab-view" role="tab" aria-selected="false" aria-controls="tab-view">View</button>
-        </div>
-
-        <!-- PARAMETERS -->
-        <div class="sim-tabpane active" id="tab-params">
-          <div class="slider-row">
-            <label class="ui-label">Pendulum length <span class="mono">l_A</span></label>
-            <input type="range" id="p-lA" aria-label="Pendulum length l_A" min="0.10" max="0.45" step="0.01" value="0.25" />
-            <span class="mono val" id="v-lA">0.25 m</span>
-          </div>
-          <div class="slider-row">
-            <label class="ui-label">Arm length <span class="mono">l_B</span></label>
-            <input type="range" id="p-lB" aria-label="Arm length l_B" min="0.10" max="0.40" step="0.01" value="0.20" />
-            <span class="mono val" id="v-lB">0.20 m</span>
-          </div>
-          <div class="slider-row">
-            <label class="ui-label">Pendulum mass <span class="mono">m_A</span></label>
-            <input type="range" id="p-mA" aria-label="Pendulum mass m_A" min="0.02" max="0.25" step="0.005" value="0.08" />
-            <span class="mono val" id="v-mA">0.080 kg</span>
-          </div>
-          <div class="slider-row">
-            <label class="ui-label">Arm mass <span class="mono">m_B</span></label>
-            <input type="range" id="p-mB" aria-label="Arm mass m_B" min="0.04" max="0.30" step="0.005" value="0.12" />
-            <span class="mono val" id="v-mB">0.120 kg</span>
-          </div>
-          <div class="derived-box">
-            <p class="caption mono">Derived (slender-rod model)</p>
-            <div class="mono derived-grid" id="derived-readout">
-              <span>J<sub>θ</sub> = —</span><span>J<sub>φ</sub> = —</span><span>B = —</span><span>L = —</span>
-            </div>
-          </div>
-          <div class="gains-box" id="gains-box">
-            <p class="caption mono">LQR gains K = [k<sub>φ</sub> k<sub>θ</sub> k<sub>φ̇</sub> k<sub>θ̇</sub>]</p>
-            <div class="mono gains-grid" id="gains-readout">
-              <span>—</span><span>—</span><span>—</span><span>—</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- CONTROL -->
-        <div class="sim-tabpane" id="tab-control">
-          <p class="caption">Balance controller</p>
-          <div class="seg" id="ctrl-mode">
-            <button class="seg-btn active" data-mode="lqr">LQR</button>
-            <button class="seg-btn" data-mode="pid">Dual PID</button>
-          </div>
-
-          <div id="lqr-controls">
-            <p class="caption">LQR weights (recomputed live) — gains saturate near the torque limit; soften visibly with R ≳ 1</p>
-            <div class="slider-row">
-              <label class="ui-label">q<sub>φ</sub></label>
-              <input type="range" id="q-phi" aria-label="LQR weight q_phi" min="10" max="3000" step="10" value="300" />
-              <span class="mono val" id="v-qphi">300</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">q<sub>θ</sub></label>
-              <input type="range" id="q-theta" aria-label="LQR weight q_theta" min="0" max="200" step="1" value="25" />
-              <span class="mono val" id="v-qtheta">25</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">q<sub>φ̇</sub></label>
-              <input type="range" id="q-dphi" aria-label="LQR weight q_phidot" min="0" max="60" step="1" value="5" />
-              <span class="mono val" id="v-qdphi">5</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">q<sub>θ̇</sub></label>
-              <input type="range" id="q-dtheta" aria-label="LQR weight q_thetadot" min="0" max="30" step="0.5" value="1.5" />
-              <span class="mono val" id="v-qdtheta">1.5</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">R</label>
-              <input type="range" id="q-r" aria-label="LQR weight R" min="0.002" max="5" step="0.005" value="0.012" />
-              <span class="mono val" id="v-qr">0.012</span>
-            </div>
-          </div>
-
-          <div id="pid-controls" style="display:none">
-            <p class="caption">Cascaded dual-PID (main.tex §3.3.2)</p>
-            <div class="slider-row">
-              <label class="ui-label">K<sub>p,φ</sub></label>
-              <input type="range" id="pid-kpphi" aria-label="PID gain K_p phi" min="0" max="3" step="0.01" value="1.10" />
-              <span class="mono val" id="v-pidkpphi">1.10</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">K<sub>d,φ</sub></label>
-              <input type="range" id="pid-kdphi" aria-label="PID gain K_d phi" min="0" max="0.5" step="0.005" value="0.11" />
-              <span class="mono val" id="v-pidkdphi">0.110</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">K<sub>i,φ</sub></label>
-              <input type="range" id="pid-kiphi" aria-label="PID gain K_i phi" min="0" max="0.5" step="0.01" value="0.10" />
-              <span class="mono val" id="v-pidkiphi">0.10</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">K<sub>p,θ</sub></label>
-              <input type="range" id="pid-kptheta" aria-label="PID gain K_p theta" min="0" max="0.3" step="0.005" value="0.04" />
-              <span class="mono val" id="v-pidkptheta">0.040</span>
-            </div>
-            <div class="slider-row">
-              <label class="ui-label">K<sub>d,θ</sub></label>
-              <input type="range" id="pid-kdtheta" aria-label="PID gain K_d theta" min="0" max="0.2" step="0.005" value="0.02" />
-              <span class="mono val" id="v-pidkdtheta">0.020</span>
-            </div>
-            <p class="der-note caption">
-              Signs per the derivation's basis convention: M = −(K<sub>p,φ</sub>φ + K<sub>d,φ</sub>φ̇ +
-              K<sub>i,φ</sub>∫φ) + K<sub>p,θ</sub>θ + K<sub>d,θ</sub>θ̇.
-            </p>
-          </div>
-
-          <p class="caption" style="margin-top:16px">Swing-up</p>
-          <p class="der-note caption" id="pump-note" style="display:none">Proportional pumping is gentler but needs a high gain — k<sub>E</sub> is set to 16 for you; tune 8–24.</p>
-          <div class="seg" id="pump-mode">
-            <button class="seg-btn active" data-pump="bang">Bang–bang</button>
-            <button class="seg-btn" data-pump="prop">Proportional</button>
-          </div>
-          <div class="slider-row" id="kE-row">
-            <label class="ui-label">k<sub>E</sub></label>
-            <input type="range" id="p-kE" aria-label="Swing-up gain k_E" min="0.5" max="24" step="0.5" value="4.0" />
-            <span class="mono val" id="v-kE">4.0</span>
-          </div>
-          <div class="slider-row">
-            <label class="ui-label">arm damping k<sub>arm</sub></label>
-            <input type="range" id="p-kArm" aria-label="Arm damping k_arm" min="0" max="0.2" step="0.005" value="0.03" />
-            <span class="mono val" id="v-kArm">0.030</span>
-          </div>
-          <div class="slider-row">
-            <label class="ui-label">max torque M<sub>max</sub></label>
-            <input type="range" id="p-Mmax" aria-label="Maximum torque" min="0.1" max="1.2" step="0.02" value="0.5" />
-            <span class="mono val" id="v-Mmax">0.50 N·m</span>
-          </div>
-          <div class="slider-row">
-            <label class="ui-label">capture |φ| ≤</label>
-            <input type="range" id="p-capture" aria-label="Capture angle" min="0.1" max="0.6" step="0.01" value="0.30" />
-            <span class="mono val" id="v-capture">0.30 rad</span>
-          </div>
-
-          <p class="caption" style="margin-top:16px">Hardware realism</p>
-          <label class="chip-toggle wide">
-            <input type="checkbox" id="noise-toggle" /><span>Sensor noise + velocity LPF</span>
-          </label>
-          <div class="slider-row">
-            <label class="ui-label">noise level</label>
-            <input type="range" id="p-noise" aria-label="Sensor noise level" min="0.001" max="0.05" step="0.001" value="0.01" />
-            <span class="mono val" id="v-noise">0.010 rad</span>
-          </div>
-        </div>
-
-        <!-- VIEW -->
-        <div class="sim-tabpane" id="tab-view">
-          <p class="caption">Overlays</p>
-          <div class="toggle-grid">
-            <label class="chip-toggle"><input type="checkbox" id="v-bases" checked /><span>Bases E, e′, e</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-arcs" checked /><span>Angle arcs θ, φ</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-gravity" checked /><span>Gravity mg</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-velocity" checked /><span>Tip velocity v</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-torque" checked /><span>Torque M(t)</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-trail" checked /><span>Tip trail</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-grid" checked /><span>Ground grid</span></label>
-            <label class="chip-toggle"><input type="checkbox" id="v-cam" /><span>Auto-orbit</span></label>
-          </div>
-          <p class="caption" style="margin-top:16px">Views</p>
-          <div class="view-buttons">
-            <button class="btn btn-ghost sm" data-view="iso">Isometric</button>
-            <button class="btn btn-ghost sm" data-view="top">Top</button>
-            <button class="btn btn-ghost sm" data-view="front">Front</button>
-            <button class="btn btn-ghost sm" data-view="side">Side</button>
-          </div>
-          <div class="color-legend">
-            <p class="caption">Vector colours (fixed semantics)</p>
-            <ul class="legend-list">
-              <li><span class="swatch" style="background:#C2452D"></span>fixed basis {E} · angle arcs</li>
-              <li><span class="swatch" style="background:#4A7FB5"></span>body basis {e′, e}</li>
-              <li><span class="swatch" style="background:#2F9E6E"></span>velocity v</li>
-              <li><span class="swatch" style="background:#E08A3C"></span>torque M(t)</li>
-              <li><span class="swatch" style="background:#7A8894"></span>gravity mg</li>
-            </ul>
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <div class="sim-bottom">
-      <div class="sim-charts">
-        <div class="chart-card">
-          <p class="caption mono">φ (blue) · θ (red) — rad</p>
-          <canvas id="chart-angles" width="600" height="150"></canvas>
-        </div>
-        <div class="chart-card">
-          <p class="caption mono">M(t) — N·m</p>
-          <canvas id="chart-torque" width="600" height="150"></canvas>
-        </div>
-        <div class="chart-card">
-          <p class="caption mono">E pendulum — J (datum: upright)</p>
-          <canvas id="chart-energy" width="600" height="150"></canvas>
-        </div>
-      </div>
-      <div class="sim-telemetry">
-        <div class="tele-row mono">
-          <span>θ</span><b id="tel-th">0.000</b><span>rad</span>
-          <span>φ</span><b id="tel-ph">0.000</b><span>rad</span>
-          <span>θ̇</span><b id="tel-thd">0.000</b><span>rad/s</span>
-          <span>φ̇</span><b id="tel-phd">0.000</b><span>rad/s</span>
-        </div>
-        <div class="tele-row mono">
-          <span>M(t)</span><b id="tel-M">0.000</b><span>N·m</span>
-          <span>E</span><b id="tel-E">0.000</b><span>J</span>
-          <span>mode</span><b id="tel-mode">—</b>
-          <span>t</span><b id="tel-t">0.00</b><span>s</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 </main>
 
@@ -757,24 +79,24 @@
     </div>
     <div class="footer-col">
       <p class="caption mono">PAGES</p>
-      <a href="#system">System</a>
-      <a href="#derivation">Derivation</a>
-      <a href="#build">Build Guide</a>
-      <a href="#simulator">Simulator</a>
+      <a href="system.html">System</a>
+      <a href="derivation.html">Derivation</a>
+      <a href="build.html">Build Guide</a>
+      <a href="simulator.html">Simulator</a>
     </div>
     <div class="footer-col">
       <p class="caption mono">THE MODEL</p>
-      <a href="#derivation">EoMs (Lagrange)</a>
-      <a href="#derivation">LQR design</a>
-      <a href="#build">Swing-up energy control</a>
-      <a href="#simulator">RK4 @ 1 kHz</a>
+      <a href="derivation.html">EoMs (Lagrange)</a>
+      <a href="derivation.html">LQR design</a>
+      <a href="build.html">Swing-up energy control</a>
+      <a href="simulator.html">RK4 @ 1 kHz</a>
     </div>
     <div class="footer-col">
-      <p class="caption mono">COLOPHON</p>
-      <p class="footer-text">Derivation and blueprint after the project notes (main.tex). Built as a teaching prototype: 3D scene by three.js, math by KaTeX, ink by hand.</p>
+      <p class="caption mono">REFERENCES</p>
+      <p class="footer-text">Notation and style of the dynamics derivation of the system is based on Prof. Robert G. Parker's <em> Essential Dynamics</em> (2026) handout. </p>
+      <p class="footer-text"> Deepseek AI was used in assistance to the development of this project. </p>
     </div>
   </div>
-  <div class="footer-spec mono">g = 9.81 m/s² · RK4 @ 1 kHz · LQR @ 200 Hz · E = T + V</div>
   <p class="footer-copy">Furuta Pendulum Lab · a self-balancing inverted pendulum simulator</p>
 </footer>
 
@@ -784,7 +106,6 @@
 <script src="js/physics.js"></script>
 <script src="js/math.js"></script>
 <script src="js/scene3d.js"></script>
-<script src="js/simulator.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

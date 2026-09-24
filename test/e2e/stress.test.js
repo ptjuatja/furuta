@@ -1,6 +1,13 @@
 /* Adversarial stress test: long runs, noise, extreme params, all UI controls. */
 "use strict";
 const puppeteer = require("puppeteer-core");
+
+const SITE = process.env.SITE_URL || "http://127.0.0.1:8123/";
+const BASE = SITE.replace(/[^/]*$/, "");
+const url = (p) => BASE + p;
+const CHROME = process.env.CHROME || "/usr/bin/google-chrome";
+const SHOTS = process.env.SHOTS || "shots";
+
 let passed = 0, failed = 0;
 function ok(cond, name, extra) {
   if (cond) { passed++; console.log("  \u2713 " + name); }
@@ -8,14 +15,15 @@ function ok(cond, name, extra) {
 }
 
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: "/usr/bin/google-chrome", headless: "new",
+  const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new",
     args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
     defaultViewport: { width: 1680, height: 1050 } });
   const page = await browser.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error" && !/three\.min\.js|OrbitControls/i.test(m.text())) errors.push(m.text()); });
-  await page.goto("http://127.0.0.1:8123/", { waitUntil: "networkidle0" });
+  /* all stress scenarios drive the simulator, which lives on its own page now */
+  await page.goto(url("simulator.html"), { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 2000));
 
   const tel = () => page.evaluate(() => window.__furutaSim.telemetry);
@@ -94,7 +102,6 @@ function ok(cond, name, extra) {
     document.querySelectorAll(".sim-panel input[type=range], #sim-speed").forEach((s) => {
       s.value = s.defaultValue; s.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    document.querySelector('[data-mode="lqr"]').click();
     document.querySelector('[data-pump="bang"]').click();
     window.__furutaSim.setStartMode("upright");
     window.__furutaSim.reset();
@@ -121,7 +128,6 @@ function ok(cond, name, extra) {
   await page.evaluate(() => {
     const set = (id, v) => { const el = document.getElementById(id); el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); };
     set("p-capture", 0.3); set("p-Mmax", 0.5); set("q-phi", 300); set("q-theta", 25); set("q-dphi", 5); set("q-dtheta", 1.5); set("q-r", 0.012);
-    document.querySelector('[data-mode="lqr"]').click();
     document.querySelector('[data-pump="prop"]').click();   // auto-sets kE=16, kArm=0.02
     window.__furutaSim.setSpeed(2);
     window.__furutaSim.setNoise(false);
@@ -136,7 +142,7 @@ function ok(cond, name, extra) {
     if (tt.mode === "balance" && Math.abs(tt.ph) < 0.15) { cap = true; break; }
   }
   ok(cap, "proportional pump captures and balances");
-  await page.screenshot({ path: "shots/06-stress-final.png" });
+  await page.screenshot({ path: SHOTS + "/06-stress-final.png" });
 
   console.log("\n[6] Final error sweep");
   ok(errors.length === 0, "no JS errors during the whole stress session", errors.slice(0, 5));

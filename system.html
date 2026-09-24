@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>§1 The System — Furuta Pendulum Visualization Lab</title>
+<meta name="description" content="Interactive 3D simulator and derivation for a rotary self-balancing inverted (Furuta) pendulum with LQR control." />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="lib/fonts.css" />
+<link rel="stylesheet" href="lib/katex.min.css" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar" id="navbar">
+  <a class="nav-brand" href="index.html">
+    <img src="assets/logo.svg" alt="Furuta Pendulum Lab logo" width="30" height="30" />
+    <span class="nav-brand-name"> <em>Furuta</em> Pendulum Visualization Lab</span>
+    <span class="nav-brand-kicker">ROTARY SELF-BALANCING INVERTED PENDULUM</span>
+  </a>
+  <div class="nav-links">
+    <a href="system.html" class="active">System</a>
+    <a href="derivation.html">Derivation</a>
+    <a href="build.html">Build Guide</a>
+  </div>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open Simulator &#9654;</a>
+  <button class="nav-burger" id="nav-burger" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</nav>
+<div class="nav-drawer" id="nav-drawer">
+  <a href="system.html" class="active">System</a>
+  <a href="derivation.html">Derivation</a>
+  <a href="build.html">Build Guide</a>
+  <a href="simulator.html">Simulator</a>
+</div>
+
+<main id="top">
+
+<!-- ============================= SYSTEM ============================= -->
+<section class="section" id="system">
+  <div class="section-head">
+    <p class="kicker">§ 1 — THE SYSTEM</p>
+    <h2 class="section-title">One motor, two angles, <em>zero</em> patience for wobble</h2>
+  </div>
+  <div class="prose-grid">
+    <div class="prose">
+      <p>
+        The <strong>rotary self-balancing inverted pendulum</strong> — the <em>Furuta pendulum</em> —
+        is a benchmark underactuated system. A base motor applies a moment
+        <span class="math">M(t)</span> about the fixed vertical axis
+        <span class="math">\vb{E}{}_3</span>, spinning a <em>rotary arm</em> (bar B, length
+        <span class="math">l{}_B</span>, angle <span class="math">\theta(t)</span>). At the arm's tip a
+        second joint lets the <em>pendulum</em> (bar A, length <span class="math">l{}_A</span>, angle
+        <span class="math">\varphi(t)</span>) rotate freely about the arm axis
+        <span class="math">\vb{e}'{}_1</span>. Gravity acts in
+        <span class="math">-\vb{E}{}_3</span>.
+      </p>
+      <p>
+        With <span class="math">\varphi = 0</span> the pendulum stands exactly upright — an unstable
+        equilibrium that the controller must hold against gravity, sensor noise and the odd human
+        shove. With <span class="math">\varphi = \pi</span> it hangs down stably. Getting from hanging
+        to upright — <em>swing-up</em> — requires pumping energy into the pendulum through the arm;
+        staying upright requires <em>balance</em>. That two-phase job is a finite-state machine
+        (FSM), detailed in <a href="build.html">§3</a> and implemented live in
+        <a href="simulator.html">§4</a>.
+      </p>
+      <p>
+        The derivation below follows the setup of the accompanying project notes
+        (<em>main.tex</em>): two rigid bars, dry friction and viscous drag neglected, inertias given
+        about their reference points. Notation is kept verbatim —
+        <span class="math">\vb{r}</span> for a tilde-underlined vector,
+        <span class="math">\mb{J}</span> for an underlined matrix,
+        <span class="math">\bas{e}</span> for an orthonormal basis.
+      </p>
+    </div>
+    <div class="prose">
+      <h3 class="h3">Bases &amp; coordinates</h3>
+      <p>Three right-handed bases describe the kinematics (see also Fig. 2 in the derivation):</p>
+      <ul class="basis-list">
+        <li><span class="math">\bas{E}</span> — fixed basis at the origin <span class="math">O</span>, with <span class="math">\vb{E}{}_3</span> vertical.</li>
+        <li><span class="math">\bas{e}'</span> — <span class="math">\bas{E}</span> rotated by <span class="math">\theta</span> about <span class="math">\vb{E}{}_3</span>; <span class="math">\vb{e}'{}_1</span> points along the arm.</li>
+        <li><span class="math">\bas{e}</span> — <span class="math">\bas{e}'</span> rotated by <span class="math">\varphi</span> about <span class="math">\vb{e}'{}_1</span>; <span class="math">\vb{e}{}_3</span> lies along the pendulum.</li>
+      </ul>
+      <div class="param-card">
+        <h3 class="h3">Default hardware (slender rods)</h3>
+        <table class="param-table mono">
+          <tr><td>l<sub>A</sub> (pendulum)</td><td>0.25 m</td><td>m<sub>A</sub></td><td>0.08 kg</td></tr>
+          <tr><td>l<sub>B</sub> (arm)</td><td>0.20 m</td><td>m<sub>B</sub></td><td>0.12 kg</td></tr>
+          <tr><td>g</td><td>9.81 m/s²</td><td>control rate</td><td>200 Hz</td></tr>
+        </table>
+        <p class="caption">Inertias follow the uniform slender-rod model: <span class="math">{}^A J{}_1 = {}^A J{}_2 = m{}_A l{}_A^2/3</span>, <span class="math">{}^B J{}_3 = m{}_B l{}_B^2/3</span>, axial terms ≈ 0.</p>
+      </div>
+    </div>
+  </div>
+
+  <figure class="full-figure">
+    <div class="fig-frame wide" id="fig-system-3d"></div>
+    <figcaption class="mono">Fig. 1 — Rotary arm B and pendulum A with bases {E}, {e′}, {e}; the red arc is θ(t), the dashed arc φ(t). Click-drag to orbit.</figcaption>
+  </figure>
+</section>
+
+</main>
+
+<!-- ============================= FOOTER ============================= -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="logo" width="34" height="34" />
+      <p class="footer-mission">See the vector. Then trust the math.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">PAGES</p>
+      <a href="system.html">System</a>
+      <a href="derivation.html">Derivation</a>
+      <a href="build.html">Build Guide</a>
+      <a href="simulator.html">Simulator</a>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">THE MODEL</p>
+      <a href="derivation.html">EoMs (Lagrange)</a>
+      <a href="derivation.html">LQR design</a>
+      <a href="build.html">Swing-up energy control</a>
+      <a href="simulator.html">RK4 @ 1 kHz</a>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">REFERENCES</p>
+      <p class="footer-text">Notation and style of the dynamics derivation of the system is based on Prof. Robert G. Parker's <em> Essential Dynamics</em> (2026) handout. </p>
+      <p class="footer-text"> Deepseek AI was used in assistance to the development of this project. </p>
+    </div>
+  </div>
+  <p class="footer-copy">Furuta Pendulum Lab · a self-balancing inverted pendulum simulator</p>
+</footer>
+
+<script src="lib/katex.min.js"></script>
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/math.js"></script>
+<script src="js/scene3d.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

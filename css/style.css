@@ -128,6 +128,10 @@ a:hover { color: var(--signal-red); }
   transition: transform 200ms var(--ease-ui);
 }
 .nav-links a:hover::after { transform: scaleX(1); }
+/* current page (multi-page navigation) */
+.nav-links a.active { color: var(--ink); }
+.nav-links a.active::after { transform: scaleX(1); }
+.nav-drawer a.active { color: var(--signal-red); }
 .nav-cta { margin-left: 8px; white-space: nowrap; }
 .nav-burger { display: none; background: none; border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 8px; cursor: pointer; color: var(--ink); }
 .nav-drawer {

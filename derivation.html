@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>§2 Derivation — Furuta Pendulum Visualization Lab</title>
+<meta name="description" content="Interactive 3D simulator and derivation for a rotary self-balancing inverted (Furuta) pendulum with LQR control." />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="lib/fonts.css" />
+<link rel="stylesheet" href="lib/katex.min.css" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar" id="navbar">
+  <a class="nav-brand" href="index.html">
+    <img src="assets/logo.svg" alt="Furuta Pendulum Lab logo" width="30" height="30" />
+    <span class="nav-brand-name"> <em>Furuta</em> Pendulum Visualization Lab</span>
+    <span class="nav-brand-kicker">ROTARY SELF-BALANCING INVERTED PENDULUM</span>
+  </a>
+  <div class="nav-links">
+    <a href="system.html">System</a>
+    <a href="derivation.html" class="active">Derivation</a>
+    <a href="build.html">Build Guide</a>
+  </div>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open Simulator &#9654;</a>
+  <button class="nav-burger" id="nav-burger" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</nav>
+<div class="nav-drawer" id="nav-drawer">
+  <a href="system.html">System</a>
+  <a href="derivation.html" class="active">Derivation</a>
+  <a href="build.html">Build Guide</a>
+  <a href="simulator.html">Simulator</a>
+</div>
+
+<main id="top">
+
+<!-- ============================= DERIVATION ============================= -->
+<section class="section section-deep" id="derivation">
+  <div class="section-head">
+    <p class="kicker">§ 2 — DERIVATION OF THE EQUATIONS OF MOTION</p>
+    <h2 class="section-title">From bases to <em>Lagrange</em> to a matrix model</h2>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="h3 der-title">2.1 &nbsp;Define the origin and the bases</h3>
+    <div class="prose-grid">
+      <div class="prose">
+        <p>
+          Origin <span class="math">O</span> sits on the motor axis. The bases are built by two
+          successive rotations — first <span class="math">\theta</span> about the fixed vertical, then
+          <span class="math">\varphi</span> about the (now rotated) arm axis:
+        </p>
+        <div class="math-display">
+          \bas{E} : \text{ fixed at } O; \qquad
+          \bas{e}' : \bas{E} \text{ rotated by } \theta \text{ about } \vb{E}{}_3; \qquad
+          \bas{e} : \bas{e}' \text{ rotated by } \varphi \text{ about } \vb{e}'{}_1
+        </div>
+        <p>The inertias of the two bars, about their respective reference points, are</p>
+        <div class="math-display">
+          {}^B\mb{J}^O{}_{\bas{e}'} = \mathrm{diag}({}^B J{}_1, {}^B J{}_2, {}^B J{}_3), \qquad
+          {}^A\mb{J}^S{}_{\bas{e}} = \mathrm{diag}({}^A J{}_1, {}^A J{}_2, {}^A J{}_3)
+        </div>
+        <p>
+          and the total angular velocity of bar A, expressed in
+          <span class="math">\bas{e}</span>, together with the cross products needed later, are
+        </p>
+        <div class="math-display">
+          \bomega = \dot{\theta}\,\vb{e}'{}_3 + \dot{\varphi}\,\vb{e}{}_1
+          = \dot{\varphi}\,\vb{e}{}_1 + \dot{\theta}\sin\varphi\,\vb{e}{}_2 + \dot{\theta}\cos\varphi\,\vb{e}{}_3
+        </div>
+        <div class="math-display">
+          \bomega \times \vb{e}{}_1 = -\dot{\theta}\sin\varphi\,\vb{e}{}_3 + \dot{\theta}\cos\varphi\,\vb{e}{}_2, \qquad
+          \bomega \times \vb{e}{}_3 = -\dot{\varphi}\,\vb{e}{}_2 + \dot{\theta}\sin\varphi\,\vb{e}{}_1
+        </div>
+      </div>
+      <figure class="side-figure">
+        <div class="fig-frame" id="fig-bases"></div>
+        <figcaption class="mono">Fig. 2 — Successive rotations: e′ = E rotated by θ about E₃; e = e′ rotated by φ about e′₁ (φ = 0 is upright).</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="h3 der-title">2.2 &nbsp;Kinematics</h3>
+    <p class="der-intro">
+      For the centre of mass of bar B (the arm), with
+      <span class="math">\vb{e}{}_1 = \vb{e}'{}_1</span>:
+    </p>
+    <div class="math-display">
+      \vb{r}{}_B = \frac{l{}_B}{2}\vb{e}'{}_1 = \frac{l{}_B}{2}\vb{e}{}_1, \qquad
+      \dot{\vb{r}}{}_B = \frac{l{}_B}{2}\dot{\vb{e}}{}_1 = \frac{l{}_B}{2}\left(-\dot{\theta}\sin\varphi\,\vb{e}{}_3 + \dot{\theta}\cos\varphi\,\vb{e}{}_2\right)
+    </div>
+    <div class="math-display">
+      \dot{\vb{r}}{}_B \cdot \dot{\vb{r}}{}_B = \frac{l{}_B^2}{4}\,\dot{\theta}^2, \qquad
+      {}^B\bomega = \dot{\theta}\,\vb{e}'{}_3, \qquad
+      {}^B\bomega \cdot {}^B\mb{J} \cdot {}^B\bomega = {}^B J{}_3\,\dot{\theta}^2
+    </div>
+    <p class="der-intro">For the centre of mass of bar A (the pendulum):</p>
+    <div class="math-display">
+      \vb{r}{}_A = \vb{r}{}_B + \frac{l{}_A}{2}\vb{e}{}_3 = l{}_B\,\vb{e}{}_1 + \frac{l{}_A}{2}\vb{e}{}_3
+    </div>
+    <div class="math-display">
+      \dot{\vb{r}}{}_A = \frac{l{}_A}{2}\dot{\theta}\sin\varphi\,\vb{e}{}_1
+      + \left[-\frac{l{}_A}{2}\dot{\varphi} + l{}_B\dot{\theta}\cos\varphi\right]\vb{e}{}_2
+      - l{}_B\dot{\theta}\sin\varphi\,\vb{e}{}_3
+    </div>
+    <div class="math-display">
+      \dot{\vb{r}}{}_A \cdot \dot{\vb{r}}{}_A = \frac{l{}_A^2}{4}\left[\dot{\theta}^2\sin^2\varphi + \dot{\varphi}^2\right]
+      + l{}_B^2\dot{\theta}^2 - l{}_A l{}_B\,\dot{\theta}\dot{\varphi}\cos\varphi
+    </div>
+    <div class="math-display">
+      {}^A\bomega = \dot{\varphi}\,\vb{e}{}_1 + \dot{\theta}\sin\varphi\,\vb{e}{}_2 + \dot{\theta}\cos\varphi\,\vb{e}{}_3, \qquad
+      {}^A\bomega \cdot {}^A\mb{J} \cdot {}^A\bomega = {}^A J{}_1\dot{\varphi}^2 + {}^A J{}_2\dot{\theta}^2\sin^2\varphi + {}^A J{}_3\dot{\theta}^2\cos^2\varphi
+    </div>
+    <p class="der-note">
+      The arm is not inert: as the pendulum swings, angular momentum about the vertical is shared,
+      so the arm rotates in opposition — the effective pendulum inertia about the hanging
+      equilibrium is the Schur complement <span class="math">J{}_\varphi - L^2/J{}_\theta</span>, not
+      <span class="math">J{}_\varphi</span>. In the simulator, release the pendulum from a small tilt with
+      control off and watch the arm counter-rotate in step.
+    </p>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="h3 der-title">2.3 &nbsp;Forces and energy</h3>
+    <p>
+      The only conservative force is gravity on bar A — bar B never changes height, so it drops out
+      of the potential. The non-conservative actuator moment is
+      <span class="math">\vb{M} = M(t)\vb{E}{}_3</span>; constraint forces do no work.
+    </p>
+    <div class="math-display">
+      T = \frac{1}{2}m{}_A\,\dot{\vb{r}}{}_A\cdot\dot{\vb{r}}{}_A + \frac{1}{2}m{}_B\,\dot{\vb{r}}{}_B\cdot\dot{\vb{r}}{}_B
+      + \frac{1}{2}\,{}^A\bomega\cdot{}^A\mb{J}\cdot{}^A\bomega + \frac{1}{2}\,{}^B\bomega\cdot{}^B\mb{J}\cdot{}^B\bomega
+    </div>
+    <div class="math-display">
+      T = \frac{1}{2}m{}_A\!\left(\frac{l{}_A^2}{4}\left[\dot{\theta}^2\sin^2\varphi + \dot{\varphi}^2\right]
+      + l{}_B^2\dot{\theta}^2 - l{}_A l{}_B\,\dot{\theta}\dot{\varphi}\cos\varphi\right)
+      + \frac{1}{2}m{}_B\frac{l{}_B^2}{4}\dot{\theta}^2
+      + \frac{1}{2}\left({}^A J{}_1\dot{\varphi}^2 + \left[{}^A J{}_2\sin^2\varphi + {}^A J{}_3\cos^2\varphi + {}^B J{}_3\right]\dot{\theta}^2\right)
+    </div>
+    <div class="math-display">
+      V = m{}_A g\,\vb{E}{}_3 \cdot \vb{r}{}_A = m{}_A g \frac{l{}_A}{2}\cos\varphi
+    </div>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="h3 der-title">2.4 &nbsp;Equations of motion (Lagrange)</h3>
+    <div class="math-display">
+      \frac{d}{dt}\frac{\partial T}{\partial \dot{q}} - \frac{\partial T}{\partial q} + \frac{\partial V}{\partial q}
+      = \sum \left(\vb{F}^{nc}\cdot\frac{\partial \vb{r}}{\partial q} + \mb{M}^{nc}\cdot\frac{\partial \bomega}{\partial \dot{q}}\right)
+    </div>
+    <p>For <span class="math">q = \theta</span>, the generalized force of the actuator is
+    <span class="math">M(t)</span>, and one obtains</p>
+    <div class="math-display">
+      \left[J{}_\theta + B\sin^2\varphi\right]\ddot{\theta} + 2B\sin\varphi\cos\varphi\,\dot{\theta}\dot{\varphi}
+      - L\cos\varphi\,\ddot{\varphi} + L\sin\varphi\,\dot{\varphi}^2 = M(t)
+    </div>
+    <p>For <span class="math">q = \varphi</span>, the actuator does no work in that direction and the
+    gravity torque appears:</p>
+    <div class="math-display">
+      J{}_\varphi\ddot{\varphi} - L\cos\varphi\,\ddot{\theta} - B\dot{\theta}^2\sin\varphi\cos\varphi
+      = m{}_A g \frac{l{}_A}{2}\sin\varphi
+    </div>
+    <p>Two unknowns, two equations — the model is complete. Rewriting in matrix form,</p>
+    <div class="math-display">
+      \mb{M}\,\ddot{\vb{q}} + \mb{C}\,\dot{\vb{q}} = \vb{\uptau}, \qquad
+      \vb{q} = \begin{bmatrix} \theta \\ \varphi \end{bmatrix}, \qquad
+      \vb{\uptau} = \begin{bmatrix} M(t) \\ m{}_A g \frac{l{}_A}{2}\sin\varphi \end{bmatrix}
+    </div>
+    <p>with the shorthand terms (all constant for a given build):</p>
+    <div class="math-display">
+      J{}_\theta = m{}_A l{}_B^2 + m{}_B\frac{l{}_B^2}{4} + {}^B J{}_3 + {}^A J{}_3
+      \quad \text{(constant base inertia)}
+    </div>
+    <div class="math-display">
+      J{}_\varphi = m{}_A\frac{l{}_A^2}{4} + {}^A J{}_1
+      \quad \text{(constant pendulum inertia)}, \qquad
+      B = m{}_A\frac{l{}_A^2}{4} + {}^A J{}_2 - {}^A J{}_3
+      \quad \text{(inertia variation amplitude)}
+    </div>
+    <div class="math-display">
+      L = \frac{l{}_A l{}_B}{2}m{}_A \quad \text{(coupling magnitude)}
+    </div>
+    <p>and the mass matrix <span class="math">\mb{M}(\vb{q})</span> and Christoffel matrix
+    <span class="math">\mb{C}(\vb{q},\dot{\vb{q}})</span>:</p>
+    <div class="math-display">
+      \mb{M} = \begin{bmatrix} J{}_\theta + B\sin^2\varphi &amp; -L\cos\varphi \\ -L\cos\varphi &amp; J{}_\varphi \end{bmatrix}, \qquad
+      \mb{C} = \begin{bmatrix} B\dot{\varphi}\sin\varphi\cos\varphi &amp; B\dot{\theta}\sin\varphi\cos\varphi + L\dot{\varphi}\sin\varphi \\ -B\dot{\theta}\sin\varphi\cos\varphi &amp; 0 \end{bmatrix}
+    </div>
+    <p class="der-note">
+      The simulator integrates this exact nonlinear model with RK4 at 1 kHz. A cross-check against
+      the raw Lagrange form (2.4) agrees to machine precision, and with
+      <span class="math">M(t) = 0</span> the mechanical energy <span class="math">E = T + V</span>
+      drifts by less than <span class="math">10^{-4}</span> relative over 10 s.
+    </p>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="h3 der-title">2.5 &nbsp;Linearization about upright &amp; LQR balance</h3>
+    <p>
+      Around the upright equilibrium <span class="math">(\varphi, \dot{\varphi}, \theta, \dot{\theta}) = (0,0,0,0)</span>
+      the nonlinear model collapses to the linear state-space form
+      <span class="math">\dot{\vb{x}} = \mb{A}\vb{x} + \mb{B}M</span> with
+      <span class="math">\vb{x} = [\varphi,\ \theta,\ \dot{\varphi},\ \dot{\theta}]^{\mathsf T}</span>:
+    </p>
+    <div class="math-display">
+      \mb{A} = \begin{bmatrix} 0 &amp; 0 &amp; 1 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 1 \\ \dfrac{m{}_A g l{}_A}{2}\dfrac{J{}_\theta}{\Delta} &amp; 0 &amp; 0 &amp; 0 \\ \dfrac{m{}_A g l{}_A}{2}\dfrac{L}{\Delta} &amp; 0 &amp; 0 &amp; 0 \end{bmatrix}, \qquad
+      \mb{B} = \begin{bmatrix} 0 \\ 0 \\ \dfrac{L}{\Delta} \\ \dfrac{J{}_\varphi}{\Delta} \end{bmatrix}, \qquad
+      \Delta = J{}_\theta J{}_\varphi - L^2
+    </div>
+    <p>
+      Note the structure: <span class="math">\varphi</span> feeds both rows (gravity pulls the
+      pendulum over; the lean also torques the arm), <span class="math">\theta</span> is a pure
+      integrator, and the torque enters both accelerations through the coupling. The pair is
+      controllable (rank of the controllability matrix is 4).
+    </p>
+    <p>LQR chooses <span class="math">M = -\mb{K}\vb{x}</span> to minimize</p>
+    <div class="math-display">
+      J = \int_0^\infty \left(\vb{x}^{\mathsf T}\mb{Q}\vb{x} + R\,M^2\right) dt
+    </div>
+    <div class="math-display">
+      \mb{K} = R^{-1}\mb{B}^{\mathsf T}\mb{P}, \qquad
+      \mb{A}^{\mathsf T}\mb{P} + \mb{P}\mb{A} - \mb{P}\mb{B}R^{-1}\mb{B}^{\mathsf T}\mb{P} + \mb{Q} = \mb{0}
+    </div>
+    <p>
+      The Riccati equation is solved at runtime by iterating its discrete-time equivalent at the
+      200 Hz control rate, so the gains adapt instantly when you change
+      <span class="math">\mb{Q}</span>, <span class="math">R</span> or the hardware in the simulator.
+      The default weights
+      <span class="math">\mb{Q} = \mathrm{diag}(300,\ 25,\ 5,\ 1.5)</span>, <span class="math">R = 0.012</span>
+      place the closed-loop pendulum poles well inside the unit circle with a healthy torque margin.
+    </p>
+    <figure class="full-figure">
+      <div class="fig-frame block-diagram" id="fig-lqr"></div>
+      <figcaption class="mono">Fig. 3 — LQR balance loop: the state x = [φ, θ, φ̇, θ̇] is fed back through K at 200 Hz; the torque is saturated at ±M_max by the motor.</figcaption>
+    </figure>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="h3 der-title">2.6 &nbsp;Swing-up: energy control</h3>
+    <p>
+      LQR only works near the upright. Starting from hanging (<span class="math">\varphi = \pi</span>)
+      we pump energy into the pendulum with the arm, using the pendulum energy with datum at the
+      upright:
+    </p>
+    <div class="math-display">
+      E = \frac{1}{2}J{}_\varphi\dot{\varphi}^2 + m{}_A g \frac{l{}_A}{2}\left(\cos\varphi - 1\right)
+      \qquad \Rightarrow \qquad E_{ref} = 0
+    </div>
+    <div class="math-display">
+      M_{swing}(t) = -k{}_E \cdot E \cdot \operatorname{sgn}\left(\dot{\varphi}\cos\varphi\right)
+    </div>
+    <p class="der-note">
+      <strong>Sign note.</strong> With the basis convention above,
+      <span class="math">\dot E \propto \dot{\varphi}\cos\varphi \cdot M</span> to leading order, so the
+      minus sign makes <span class="math">E \to E_{ref}</span>: when the pendulum lacks energy the arm
+      accelerates <em>in the direction of the pendulum's swing</em> — exactly the behaviour described
+      in the project notes. (The literal sign printed there would remove energy; the verbal
+      description pins the correct one.) The simulator defaults to the saturated
+      <em>bang–bang</em> form <span class="math">M = \pm M_{max}</span> for a fast, robust swing-up,
+      with optional arm-velocity damping to stop the arm winding up.
+    </p>
+    <p>A finite-state machine ties the phases together:</p>
+    <div class="fsm-row">
+      <div class="fsm-node"><span class="mono">SWING-UP</span><span class="fsm-sub">energy pump until |φ| ≤ 0.3, |φ̇| ≤ 2.5, |θ̇| ≤ 3</span></div>
+      <div class="fsm-arrow">→</div>
+      <div class="fsm-node"><span class="mono">BALANCE</span><span class="fsm-sub">pendulum-first gains, then the full LQR</span></div>
+      <div class="fsm-arrow-back">|φ| &gt; 0.55</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================= FOOTER ============================= -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="logo" width="34" height="34" />
+      <p class="footer-mission">See the vector. Then trust the math.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">PAGES</p>
+      <a href="system.html">System</a>
+      <a href="derivation.html">Derivation</a>
+      <a href="build.html">Build Guide</a>
+      <a href="simulator.html">Simulator</a>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">THE MODEL</p>
+      <a href="derivation.html">EoMs (Lagrange)</a>
+      <a href="derivation.html">LQR design</a>
+      <a href="build.html">Swing-up energy control</a>
+      <a href="simulator.html">RK4 @ 1 kHz</a>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">REFERENCES</p>
+      <p class="footer-text">Notation and style of the dynamics derivation of the system is based on Prof. Robert G. Parker's <em> Essential Dynamics</em> (2026) handout. </p>
+      <p class="footer-text"> Deepseek AI was used in assistance to the development of this project. </p>
+    </div>
+  </div>
+  <p class="footer-copy">Furuta Pendulum Lab · a self-balancing inverted pendulum simulator</p>
+</footer>
+
+<script src="lib/katex.min.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/math.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
