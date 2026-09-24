@@ -18,12 +18,11 @@ const D = P.deriveParams(params);
 console.log("Derived constants:", { Jt: +D.Jt.toFixed(5), Jp: +D.Jp.toFixed(5), Bc: +D.Bc.toFixed(5), L: +D.L.toFixed(5) });
 
 /* default controller configuration (also used by the website) */
-function defaultCtrl(mode) {
+function defaultCtrl() {
   const full = P.lqrGains(D, dtC, [[300, 0, 0, 0], [0, 25, 0, 0], [0, 0, 5, 0], [0, 0, 0, 1.5]], 0.012);
   const pendFirst = P.lqrGains(D, dtC, [[500, 0, 0, 0], [0, 1, 0, 0], [0, 0, 8, 0], [0, 0, 0, 0.1]], 0.008);
   const ctrl = {
-    mode, K: full.K, Kp: mode === "lqr" ? pendFirst.K : null,
-    pid: { kpPhi: 1.1, kdPhi: 0.11, kiPhi: 0.1, kpTheta: 0.04, kdTheta: 0.02, maxI: 0.4 },
+    K: full.K, Kp: pendFirst.K,
     pump: "bang", kE: 4, kArm: 0.03, Mmax: 0.5,
     capture: 0.3, capVel: 2.5, capArmVel: 3.0, phiSafe: 0.12, lost: 0.55,
   };
@@ -36,7 +35,7 @@ function runFSM(ctrl, init, opts) {
   let s = { ...init };
   let M = 0, mode = "", capT = -1, fell = false, spin = false;
   let maxPhi = 0, maxM = 0, thFinal = 0;
-  const cstate = { pidI: { iPhi: 0 } };
+  const cstate = { balance: false };
   for (let i = 0; i < opts.Tmax / dt; i++) {
     const t = i * dt;
     if (i % CTL === 0) {
@@ -106,7 +105,7 @@ console.log("\n[3] Hanging pendulum: small perturbation oscillates with the coup
 
 console.log("\n[4] LQR balance: stabilizes from phi = 0.12 rad and holds 10 s");
 {
-  const ctrl = defaultCtrl("lqr");
+  const ctrl = defaultCtrl();
   const r = runFSM(ctrl, { th: 0, ph: 0.12, thd: 0, phd: 0 }, { Tmax: 10 });
   ok(r.capT >= 0 && !r.fell, `captured immediately and held (capT=${r.capT?.toFixed(2)}, fell=${r.fell})`);
   ok(r.maxPhi < 0.15, `pendulum never exceeds initial offset (max|phi|=${r.maxPhi.toFixed(4)})`);
@@ -114,7 +113,7 @@ console.log("\n[4] LQR balance: stabilizes from phi = 0.12 rad and holds 10 s");
 
 console.log("\n[5] Swing-up: hanging -> capture -> balance, holds 40 s (LQR)");
 {
-  const ctrl = defaultCtrl("lqr");
+  const ctrl = defaultCtrl();
   const r = runFSM(ctrl, { th: 0, ph: Math.PI + 0.02, thd: 0, phd: 0.1 }, { Tmax: 40 });
   ok(r.capT >= 0 && r.capT < 8, `swing-up captured at t=${r.capT?.toFixed(2)} s (< 8 s)`);
   ok(!r.fell, `did not fall for 40 s (fell=${r.fell}, thFinal=${r.thFinal.toFixed(2)})`);
@@ -133,7 +132,7 @@ console.log("\n[6] Swing-up robustness across initial states (LQR)");
   ];
   let all = true;
   for (let k = 0; k < inits.length; k++) {
-    const r = runFSM(defaultCtrl("lqr"), inits[k], { Tmax: 30 });
+    const r = runFSM(defaultCtrl(), inits[k], { Tmax: 30 });
     const good = r.capT >= 0 && !r.fell && !r.spin;
     if (!good) all = false;
     console.log(`  init #${k + 1}: capT=${r.capT < 0 ? "NEVER" : r.capT.toFixed(2)}s fell=${r.fell} spin=${r.spin} ${good ? "" : "  <-- FAIL"}`);
@@ -143,30 +142,19 @@ console.log("\n[6] Swing-up robustness across initial states (LQR)");
 
 console.log("\n[7] Disturbance rejection: sharp kick at t=6 s while balancing");
 {
-  const ctrl = defaultCtrl("lqr");
+  const ctrl = defaultCtrl();
   const opts = { Tmax: 16, kickT: 6, kickP: 1.5, kicked: false };
   const r = runFSM(ctrl, { th: 0, ph: Math.PI, thd: 0, phd: 0.1 }, opts);
   ok(r.capT >= 0 && !r.fell, `survives kick (fell=${r.fell}, maxPhi=${r.maxPhi.toFixed(3)})`);
 }
 
-console.log("\n[8] Dual-PID balance (main.tex scheme) + swing-up capture");
+console.log("\n[8] Sensor noise + velocity LPF: still balances");
 {
-  const ctrl = defaultCtrl("pid");
-  // near-upright start
-  const r1 = runFSM(ctrl, { th: 0, ph: 0.08, thd: 0, phd: 0 }, { Tmax: 12 });
-  ok(r1.capT >= 0 && !r1.fell, `PID balances from 0.08 rad (fell=${r1.fell})`);
-  // full swing-up with PID balance
-  const r2 = runFSM(ctrl, { th: 0, ph: Math.PI + 0.02, thd: 0, phd: 0.1 }, { Tmax: 40 });
-  ok(r2.capT >= 0 && r2.capT < 12 && !r2.fell, `PID swing-up captured at t=${r2.capT?.toFixed(2)} and held (fell=${r2.fell})`);
-}
-
-console.log("\n[9] Sensor noise + velocity LPF: still balances");
-{
-  const ctrl = defaultCtrl("lqr");
+  const ctrl = defaultCtrl();
   let s = { th: 0, ph: Math.PI, thd: 0, phd: 0.1 };
   let M = 0, mode = "", capT = -1, fell = false;
   const meas = { thdFilt: 0, phdFilt: 0 };
-  const cstate = { pidI: { iPhi: 0 } };
+  const cstate = { balance: false };
   let useS;
   for (let i = 0; i < 30000; i++) {
     const t = i * dt;
@@ -183,7 +171,7 @@ console.log("\n[9] Sensor noise + velocity LPF: still balances");
   ok(capT >= 0 && !fell, `captured (${capT?.toFixed(2)}s) and held with noisy sensors (fell=${fell})`);
 }
 
-console.log("\n[10] Parameter robustness: swing-up + balance across hardware variants");
+console.log("\n[9] Parameter robustness: swing-up + balance across hardware variants");
 {
   const variants = [
     { lA: 0.15, lB: 0.25, mA: 0.05, mB: 0.20 },   // long light arm, short light pendulum
@@ -197,10 +185,10 @@ console.log("\n[10] Parameter robustness: swing-up + balance across hardware var
     const Pk = P.deriveParams(variants[k]);
     const full = P.lqrGains(Pk, dtC, [[300, 0, 0, 0], [0, 25, 0, 0], [0, 0, 5, 0], [0, 0, 0, 1.5]], 0.012);
     const pf = P.lqrGains(Pk, dtC, [[500, 0, 0, 0], [0, 1, 0, 0], [0, 0, 8, 0], [0, 0, 0, 0.1]], 0.008);
-    const ctrl = { mode: "lqr", K: full.K, Kp: pf.K, pump: "bang", kArm: 0.03, Mmax: 0.5, capture: 0.3, capVel: 2.5, capArmVel: 3.0, phiSafe: 0.12, lost: 0.55 };
+    const ctrl = { K: full.K, Kp: pf.K, pump: "bang", kArm: 0.03, Mmax: 0.5, capture: 0.3, capVel: 2.5, capArmVel: 3.0, phiSafe: 0.12, lost: 0.55 };
     let s = { th: 0, ph: Math.PI + 0.02, thd: 0, phd: 0.1 };
     let M = 0, mode = "", capT = -1, fell = false;
-    const cstate = { pidI: { iPhi: 0 } };
+    const cstate = { balance: false };
     for (let i = 0; i < 40000; i++) {
       const t = i * dt;
       if (i % CTL === 0) { const r = P.controller(Pk, s, ctrl, cstate, dtC); M = r.M; mode = r.mode; }
@@ -215,7 +203,7 @@ console.log("\n[10] Parameter robustness: swing-up + balance across hardware var
   ok(all, "all 5 hardware variants swing up and balance with recomputed LQR");
 }
 
-console.log("\n[11] Controllability of the upright linearization (rank 4)");
+console.log("\n[10] Controllability of the upright linearization (rank 4)");
 {
   const { A, B } = P.linStateSpace(D);
   const vecs = [];
@@ -239,7 +227,7 @@ console.log("\n[11] Controllability of the upright linearization (rank 4)");
   ok(rank === 4, `controllability matrix has rank 4 (got ${rank})`);
 }
 
-console.log("\n[12] Energy pump with corrected sign adds energy at the bottom");
+console.log("\n[11] Energy pump with corrected sign adds energy at the bottom");
 {
   let s = { th: 0, ph: Math.PI, thd: 0, phd: 0.2 };
   const E0 = P.pendEnergy(D, s);

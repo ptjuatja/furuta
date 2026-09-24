@@ -79,13 +79,21 @@
   }
 
   /* ---------- kinematics helpers ---------- */
+  /* The pendulum's axle is bolted just beyond the arm's nominal end (lB), so
+   * joint S is rendered at lB + YOKE_X. The mesh build and these helpers must
+   * agree on that offset, otherwise world-space overlays (gravity anchor, tip
+   * velocity, trail) drift off the geometry they are supposed to mark. */
+  const YOKE_X = 0.013;
+
   function tipPos(th, ph, lB, lA) {
     const st = Math.sin(th), ct = Math.cos(th), sp = Math.sin(ph), cp = Math.cos(ph);
-    return new THREE.Vector3(lB * ct + lA * sp * st, lA * cp, -lB * st + lA * sp * ct);
+    const r = lB + YOKE_X;
+    return new THREE.Vector3(r * ct + lA * sp * st, lA * cp, -r * st + lA * sp * ct);
   }
   function comPos(th, ph, lB, lA) {
     const st = Math.sin(th), ct = Math.cos(th), sp = Math.sin(ph), cp = Math.cos(ph);
-    return new THREE.Vector3(lB * ct + (lA / 2) * sp * st, (lA / 2) * cp, -lB * st + (lA / 2) * sp * ct);
+    const r = lB + YOKE_X, h = lA / 2;
+    return new THREE.Vector3(r * ct + h * sp * st, h * cp, -r * st + h * sp * ct);
   }
   function armDir(th) {
     return new THREE.Vector3(Math.cos(th), 0, -Math.sin(th));
@@ -171,32 +179,54 @@
       m.receiveShadow = true;
       return m;
     }
+    /* The stand is stacked bottom-up from a running height cursor, so the top of
+     * the motor shaft is exact. The arm's rotation axis IS the motor shaft axis,
+     * so the arm assembly (armGroup) is mounted at that height: the base/stand
+     * origin and the arm origin are then coincident. */
+    const RIG = {
+      plate: 0.028,     // acrylic base plate
+      column: 0.12,     // brass standoffs
+      mid: 0.018,       // mid plate (electronics)
+      motor: 0.085,     // motor body
+      shaft: 0.034,     // output shaft
+      clamp: 0.008,     // shaft clamp the arm bolts onto
+    };
+    const ARM_H = 0.013;               // arm bar thickness (its centreline is the pivot)
+
     const base = new THREE.Group();
-    base.add(box(0.3, 0.028, 0.3, COL.inkSoft, 0.014));          // acrylic base plate
-    const standoffs = [[-0.11, -0.11], [0.11, -0.11], [-0.11, 0.11], [0.11, 0.11]];
-    for (const [x, z] of standoffs) {
-      const st = cyl(0.0065, 0.09, COL.engineBlue, 0.028 + 0.045);
+    let yTop = 0;
+    base.add(box(0.30, RIG.plate, 0.30, COL.inkSoft, yTop + RIG.plate / 2));
+    yTop += RIG.plate;
+    for (const [x, z] of [[-0.11, -0.11], [0.11, -0.11], [-0.11, 0.11], [0.11, 0.11]]) {
+      const st = cyl(0.0065, RIG.column, COL.engineBlue, yTop + RIG.column / 2);
       st.position.x = x; st.position.z = z;
       base.add(st);
     }
-    base.add(box(0.24, 0.018, 0.24, COL.inkSoft, 0.028 + 0.09)); // mid plate
-    const motor = box(0.052, 0.085, 0.052, COL.motorGray, 0.028 + 0.09 + 0.018 + 0.0425);
-    base.add(motor);
-    const shaft = cyl(0.009, 0.034, COL.shaftGray, 0.028 + 0.09 + 0.018 + 0.085 + 0.017);
-    base.add(shaft);
-    const shaftCap = cyl(0.014, 0.008, COL.engineBlueDeep, 0.028 + 0.09 + 0.018 + 0.085 + 0.034 + 0.004);
-    base.add(shaftCap);
+    yTop += RIG.column;
+    base.add(box(0.24, RIG.mid, 0.24, COL.inkSoft, yTop + RIG.mid / 2));
+    yTop += RIG.mid;
+    base.add(box(0.052, RIG.motor, 0.052, COL.motorGray, yTop + RIG.motor / 2));
+    yTop += RIG.motor;
+    base.add(cyl(0.009, RIG.shaft, COL.shaftGray, yTop + RIG.shaft / 2));
+    yTop += RIG.shaft;
+    base.add(cyl(0.014, RIG.clamp, COL.engineBlueDeep, yTop + RIG.clamp / 2));
+    yTop += RIG.clamp;
     scene.add(base);
+
+    const STAND_TOP = yTop;                    // top face of the stand column
+    const PIVOT_Y = STAND_TOP + ARM_H / 2;     // arm bar rests on the shaft clamp
+    const FOCUS_Y = PIVOT_Y;                   // orbit centre = the arm plane
 
     /* ---- arm + pendulum (rebuilt when params change) ---- */
     const armGroup = new THREE.Group();
     const pendGroup = new THREE.Group();
     armGroup.name = "armGroup";
     pendGroup.name = "pendGroup";
+    armGroup.position.y = PIVOT_Y;   // mounted on the stand, not at the ground plane
     armGroup.add(pendGroup);
     scene.add(armGroup);
     let armMeshes = [];
-    let params = { lA: 0.25, lB: 0.2 };
+    let params = { lA: 0.25, lB: 0.2, mA: 0.08, mB: 0.12, g: 9.81 };
 
     function buildRig(lA, lB) {
       for (const m of armMeshes) {
@@ -205,21 +235,29 @@
         m.material.dispose();
       }
       armMeshes = [];
-      pendGroup.position.x = lB + 0.013;   // pendulum pivots on the yoke axle at the arm tip
-      const H = 0.013, W = 0.022;                    // arm cross-section
+      pendGroup.position.x = lB + YOKE_X;   // pendulum pivots on the yoke axle at the arm tip
+      const H = ARM_H, W = 0.022;                    // arm cross-section
+      // hub that clamps the arm onto the motor shaft (centred on the pivot axis)
+      const hub = cyl(0.017, 0.022, COL.engineBlueDeep, -0.004);
+      armGroup.add(hub);
+      armMeshes.push(hub);
       const armBar = box(lB, H, W, COL.engineBlue, 0);
       armBar.position.x = lB / 2;
+      armGroup.add(armBar);
       armMeshes.push(armBar);
       // yoke: two side plates + axle at the tip
       const plate = box(0.026, 0.036, 0.006, COL.engineBlueDeep, 0);
-      plate.position.set(lB + 0.013, 0, 0.013);
+      plate.position.set(lB + YOKE_X, 0, 0.013);
+      armGroup.add(plate);
       armMeshes.push(plate);
       const plate2 = plate.clone();
       plate2.position.z = -0.013;
+      armGroup.add(plate2);
       armMeshes.push(plate2);
       const axle = cyl(0.0045, 0.036, COL.shaftGray, 0);
       axle.rotation.z = Math.PI / 2;
-      axle.position.set(lB + 0.013, 0, 0);
+      axle.position.set(lB + YOKE_X, 0, 0);
+      armGroup.add(axle);
       armMeshes.push(axle);
       // pendulum
       const pH = 0.014, pW = 0.014;
@@ -247,9 +285,13 @@
     /* ---- overlays ---- */
     const overlays = {};
 
-    // fixed basis E at O
+    // Fixed basis E at O. O sits on the motor axis, in the plane of the arm
+    // (main.tex top view: E1 is the horizontal reference line the arm is
+    // measured from), so the frame rides at the arm's height rather than on the
+    // ground. It is lifted just clear of the arm bar so the E1/E2 arrows are
+    // not swallowed by the arm mesh when theta ~ 0.
     const basisE = makeBasis("E", 0.16, COL.signalRed);
-    basisE.position.y = 0.001;
+    basisE.position.y = PIVOT_Y + ARM_H / 2 + 0.006;
     scene.add(basisE);
 
     // body basis e' at the joint (attached to arm, at tip)
@@ -257,19 +299,21 @@
     basisEp.position.x = 0.001; // moved by update
     armGroup.add(basisEp);
 
-    // body basis e at the pendulum COM (attached to pendulum)
+    // Body basis e — attached to the pendulum at its free end (main.tex front
+    // view draws {e} near the far tip of bar A, not at the joint S).
     const basisE2 = makeBasis("e", 0.13, 0x4A7FB5);
     basisE2.position.y = 0.001;
     pendGroup.add(basisE2);
 
-    // labels O, S
+    // label O at the origin on the motor axis
     const lblO = makeLabel("O", "#22303C");
-    lblO.position.set(-0.03, -0.01, 0.03);
+    lblO.position.set(-0.05, PIVOT_Y - 0.004, 0.05);
     scene.add(lblO);
 
-    // theta arc (red, in horizontal plane at origin)
+    // theta arc (red) — drawn in the arm's plane, about the vertical E3 axis
     const thetaArcMat = new THREE.LineBasicMaterial({ color: COL.signalRed, transparent: true, opacity: 0.9 });
     const thetaArc = new THREE.Line(new THREE.BufferGeometry(), thetaArcMat);
+    thetaArc.position.y = PIVOT_Y;
     scene.add(thetaArc);
 
     // phi arc (red, dashed, in arm local YZ plane at the joint)
@@ -277,14 +321,21 @@
     const phiArc = new THREE.Line(new THREE.BufferGeometry(), phiArcMat);
     armGroup.add(phiArc);
 
-    // gravity arrow at pendulum COM
+    // Gravity vector. It is anchored at the pendulum's centre of mass but must
+    // ALWAYS point vertically down in world space, so it must NOT be a child of
+    // pendGroup (which rotates by phi). It lives in the scene and is repositioned
+    // onto the COM every frame; direction stays (0,-1,0) forever.
     const gravArrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 0), 0.1, COL.gravity, 0.03, 0.018);
-    pendGroup.add(gravArrow);
+    gravArrow.line.material.depthTest = false;
+    gravArrow.cone.material.depthTest = false;
+    gravArrow.line.material.transparent = true;
+    gravArrow.cone.material.transparent = true;   // draw in the transparent pass, over the rig
+    gravArrow.renderOrder = 3;
+    scene.add(gravArrow);
     const lblG = makeLabel("mg", "#7A8894");
-    lblG.position.set(0.01, -0.075, 0);
-    pendGroup.add(lblG);
+    scene.add(lblG);
 
-    // torque arrow at O (curved arc + head), orange
+    // torque arrow about E3 at the arm plane (curved arc + head), orange
     const torqueGroup = new THREE.Group();
     const torqueArcMat = new THREE.LineBasicMaterial({ color: COL.orange, transparent: true, opacity: 0.95 });
     const torqueArc = new THREE.Line(new THREE.BufferGeometry(), torqueArcMat);
@@ -294,7 +345,7 @@
       new THREE.MeshBasicMaterial({ color: COL.orange })
     );
     torqueGroup.add(torqueHead);
-    torqueGroup.position.y = 0.001;
+    torqueGroup.position.y = PIVOT_Y;
     scene.add(torqueGroup);
 
     // velocity arrow at tip (world frame, computed per frame)
@@ -351,6 +402,21 @@
       return pts;
     }
 
+    /* tip position in scene coordinates: tipPos() is arm-local, so lift it by
+     * the rig's pivot height (the arm is mounted on top of the stand). */
+    function worldTip(th, ph, lB, lA) {
+      const p = tipPos(th, ph, lB, lA);
+      p.y += PIVOT_Y;
+      return p;
+    }
+
+    /* pendulum centre-of-mass position in scene coordinates (comPos is arm-local). */
+    function worldCom(th, ph, lB, lA) {
+      const p = comPos(th, ph, lB, lA);
+      p.y += PIVOT_Y;
+      return p;
+    }
+
     function updateOverlays() {
       const { th, ph, thd, phd } = state;
       const lB = params.lB, lA = params.lA;
@@ -367,27 +433,28 @@
         thetaArc.geometry.setFromPoints(pts);
         // phi arc at joint in arm-local YZ plane: from +Y to current e3 direction (ph measured from +Y toward +Z in local)
         const rP = 0.075;
-        const pPts = arcPoints(lB + 0.013, 0, 0, rP, 0, ph, 24, "yz");
+        const pPts = arcPoints(lB + YOKE_X, 0, 0, rP, 0, ph, 24, "yz");
         phiArc.geometry.setFromPoints(pPts);
         phiArc.computeLineDistances();
         const phiLbl = armGroup.getObjectByName && null;
       }
       // basis positions
       basisEp.position.set(lB + 0.02, 0, 0);
-      basisE2.position.y = lA / 2;
-      // gravity arrow length proportional to mA g
+      basisE2.position.y = lA;   // {e} rides the free end of the pendulum
+      // gravity vector: anchored on the pendulum COM, always vertically down
       const gLen = Math.min(0.16, 0.05 + params.mA * params.g * 0.08);
       gravArrow.setLength(gLen, gLen * 0.25, gLen * 0.14);
-      gravArrow.position.y = lA / 2 - 0.012;
-      lblG.position.set(0.012, lA / 2 - gLen - 0.015, 0);
+      const com = worldCom(th, ph, lB, lA);
+      gravArrow.position.copy(com);
+      lblG.position.set(com.x + 0.012, com.y - gLen - 0.015, com.z);
       // velocity arrow
       if (overlays.velocity) {
         const vl = Math.min(0.28, 0.03 + speed * 0.035);
         if (speed > 0.02) {
           velArrow.setDirection(vTip.clone().normalize());
           velArrow.setLength(vl, vl * 0.25, vl * 0.14);
-          velArrow.position.copy(tipPos(th, ph, lB, lA));
-          lblV.position.copy(tipPos(th, ph, lB, lA).clone().add(vTip.clone().normalize().multiplyScalar(vl + 0.025)));
+          velArrow.position.copy(worldTip(th, ph, lB, lA));
+          lblV.position.copy(worldTip(th, ph, lB, lA).add(vTip.clone().normalize().multiplyScalar(vl + 0.025)));
           velArrow.visible = true; lblV.visible = true;
         } else {
           velArrow.visible = false; lblV.visible = false;
@@ -412,7 +479,7 @@
       }
       // trail
       if (overlays.trail) {
-        const p = tipPos(th, ph, lB, lA);
+        const p = worldTip(th, ph, lB, lA);
         trailPos[trailHead * 3] = p.x;
         trailPos[trailHead * 3 + 1] = p.y;
         trailPos[trailHead * 3 + 2] = p.z;
@@ -461,12 +528,12 @@
         updateOverlays();
       },
       setParams(p) {
-        params = { lA: p.lA, lB: p.lB };
+        params = { lA: p.lA, lB: p.lB, mA: p.mA, mB: p.mB, g: p.g };
         buildRig(p.lA, p.lB);
         const dist = 1.25 * (p.lA + p.lB + 0.3);
-        if (camera.position.length() < dist * 0.6) {
-          // zoom out to fit
-          camera.position.copy(new THREE.Vector3(0.62, 0.45, 0.8).normalize().multiplyScalar(dist));
+        if (camera.position.distanceTo(controls.target) < dist * 0.6) {
+          // zoom out to fit, keeping the rig's pivot plane centred
+          camera.position.copy(new THREE.Vector3(0.62, 0.45, 0.8).normalize().multiplyScalar(dist).add(controls.target));
         }
         controls.minDistance = 0.2;
         controls.maxDistance = dist * 3;
@@ -477,8 +544,8 @@
         applyOverlayFlags();
       },
       setView(name) {
-        const dist = camera.position.length() || 1;
-        const t = new THREE.Vector3(0, 0.16, 0);
+        const dist = camera.position.distanceTo(controls.target) || 1;
+        const t = new THREE.Vector3(0, FOCUS_Y, 0);
         const pos = {
           iso: new THREE.Vector3(0.62, 0.5, 0.8),
           top: new THREE.Vector3(0, 1, 0.001),
@@ -508,9 +575,9 @@
       },
     };
 
-    /* initial framing */
-    camera.position.set(0.55, 0.42, 0.75).multiplyScalar(1.15);
-    controls.target.set(0, 0.16, 0);
+    /* initial framing — orbit around the arm plane, not the ground plane */
+    camera.position.set(0.55, 0.42, 0.75).multiplyScalar(1.15).add(new THREE.Vector3(0, FOCUS_Y, 0));
+    controls.target.set(0, FOCUS_Y, 0);
     controls.update();
     applyOverlayFlags();
     resize();

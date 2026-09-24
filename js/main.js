@@ -39,7 +39,7 @@
       if (scene) {
         const ctrl = heroCtrl(D, DTC);
         let state = { th: 0, ph: Math.PI + 0.02, thd: 0, phd: 0.1 };
-        let cstate = { pidI: { iPhi: 0 } };
+        let cstate = { balance: false };
         let M = 0, t = 0, balanceStart = -1;
         let last = performance.now(), acc = 0;
         const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -64,7 +64,7 @@
             if (balanceStart < 0) balanceStart = t;
             if (t - balanceStart > 5) {
               state = { th: 0, ph: Math.PI + 0.02, thd: 0, phd: 0.1 };
-              cstate = { pidI: { iPhi: 0 } }; t = 0; balanceStart = -1;
+              cstate = { balance: false }; t = 0; balanceStart = -1;
             }
           }
           scene.setState(state, M);
@@ -113,7 +113,7 @@
     const full = P.lqrGains(D, DTC, [[300, 0, 0, 0], [0, 25, 0, 0], [0, 0, 5, 0], [0, 0, 0, 1.5]], 0.012);
     const pf = P.lqrGains(D, DTC, [[500, 0, 0, 0], [0, 1, 0, 0], [0, 0, 8, 0], [0, 0, 0, 0.1]], 0.008);
     return {
-      mode: "lqr", K: full.K, Kp: pf.K, pump: "bang", kArm: 0.03, Mmax: 0.5,
+      K: full.K, Kp: pf.K, pump: "bang", kArm: 0.03, Mmax: 0.5,
       capture: 0.3, capVel: 2.5, capArmVel: 3.0, phiSafe: 0.12, lost: 0.55,
     };
   }

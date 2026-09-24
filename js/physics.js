@@ -293,21 +293,6 @@
     return { M, E };
   }
 
-  /* cascaded dual-PID balance law (main.tex sec. 3.3.2), sign-corrected for
-   * the basis convention of the derivation:
-   *   M = -(kpPhi*phi + kdPhi*phid + kiPhi*int phi) + kpTheta*th + kdTheta*thd
-   * i.e. the arm torque opposes the pendulum's lean (as the LQR does, and as
-   * the project notes describe: "the arm darts to catch the pendulum"). */
-  function pidTorque(P, s, pid, iState, dtC) {
-    const phiW = wrapPi(s.ph);
-    const thW = wrapPi(s.th);
-    iState.iPhi += phiW * dtC;
-    const clamp = Math.abs(pid.maxI) || 0.5;
-    iState.iPhi = Math.max(-clamp, Math.min(clamp, iState.iPhi));
-    return -(pid.kpPhi * phiW + pid.kdPhi * s.phd + pid.kiPhi * iState.iPhi) +
-            pid.kpTheta * thW + pid.kdTheta * s.thd;
-  }
-
   /* full finite-state controller with hysteresis.
    * States: SWING (energy pump) until the pendulum is near upright and slow
    * (and the arm is not spinning too fast), then BALANCE. BALANCE is exited
@@ -315,10 +300,9 @@
    * swing/balance chattering during an aggressive catch.
    * In BALANCE the hand-off uses pendulum-first gains (Kp) while
    * |phi| > phiSafe, then the full gains K (which regulate theta back to 0).
+   * Balance is a full-state LQR: M = -(K[0]*phi + K[1]*theta + K[2]*phid + K[3]*thd).
    * ctrl fields:
-   *   mode: "lqr" | "pid"
    *   K, Kp: LQR gain rows (Kp may be null -> same as K)
-   *   pid: { kpPhi, kdPhi, kiPhi, kpTheta, kdTheta, maxI }
    *   pump: "bang" | "prop" ; kE (prop), kArm (arm damping in swing),
    *   capture, capVel, capArmVel, phiSafe, lost, Mmax
    * Returns { M, mode } where mode is "swing" | "balance". */
@@ -339,17 +323,8 @@
     }
     if (cstate) cstate.balance = mode === "balance";
     if (mode === "balance") {
-      if (ctrl.mode === "pid") {
-        M = pidTorque(P, s, ctrl.pid, cstate.pidI, dtC);
-        if (aPhi > (ctrl.phiSafe != null ? ctrl.phiSafe : 0.12)) {
-          // pendulum-first hand-off: drop arm terms while catching
-          const pid2 = ctrl.pid;
-          M = -(pid2.kpPhi * phiW + pid2.kdPhi * s.phd + pid2.kiPhi * cstate.pidI.iPhi);
-        }
-      } else {
-        const K = (ctrl.Kp && aPhi > (ctrl.phiSafe != null ? ctrl.phiSafe : 0.12)) ? ctrl.Kp : ctrl.K;
-        M = -(K[0] * phiW + K[1] * thW + K[2] * s.phd + K[3] * s.thd);
-      }
+      const K = (ctrl.Kp && aPhi > (ctrl.phiSafe != null ? ctrl.phiSafe : 0.12)) ? ctrl.Kp : ctrl.K;
+      M = -(K[0] * phiW + K[1] * thW + K[2] * s.phd + K[3] * s.thd);
       if (ctrl.Mmax > 0) M = Math.max(-ctrl.Mmax, Math.min(ctrl.Mmax, M));
     } else {
       if (ctrl.pump === "bang") {
@@ -398,7 +373,6 @@
     lqrGains,
     swingTorque,
     bangTorque,
-    pidTorque,
     controller,
     sensor,
     lowpass,

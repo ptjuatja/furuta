@@ -16,12 +16,10 @@
   let D = P.deriveParams(params);
 
   const ctrl = {
-    mode: "lqr",
     Q: [[300, 0, 0, 0], [0, 25, 0, 0], [0, 0, 5, 0], [0, 0, 0, 1.5]],
     R: 0.012,
     Qp: [[500, 0, 0, 0], [0, 1, 0, 0], [0, 0, 8, 0], [0, 0, 0, 0.1]],
     Rp: 0.008,
-    pid: { kpPhi: 1.1, kdPhi: 0.11, kiPhi: 0.10, kpTheta: 0.04, kdTheta: 0.02, maxI: 0.4 },
     pump: "bang",
     kE: 4.0,
     kArm: 0.03,
@@ -55,7 +53,7 @@
     manualDeg: 120,
     kickStrength: 0.9,
   };
-  let cstate = { pidI: { iPhi: 0 } };
+  let cstate = { balance: false };
   let meas = { thdFilt: 0, phdFilt: 0 };
   let stepCount = 0;
 
@@ -72,7 +70,7 @@
     sim.torque = 0;
     sim.ctrlMode = "swing";
     stepCount = 0;
-    cstate = { pidI: { iPhi: 0 } };
+    cstate = { balance: false };
     meas = { thdFilt: 0, phdFilt: 0 };
     charts.forEach((c) => c.clear());
   }
@@ -307,13 +305,6 @@
     bindSlider("q-dtheta", "v-qdtheta", (v) => v.toFixed(1), (v) => { ctrl.Q[3][3] = v; recomputeGains(); });
     bindSlider("q-r", "v-qr", (v) => (v >= 1 ? v.toFixed(1) : v >= 0.1 ? v.toFixed(2) : v.toFixed(3)), (v) => { ctrl.R = v; recomputeGains(); });
 
-    // PID gains
-    bindSlider("pid-kpphi", "v-pidkpphi", (v) => v.toFixed(2), (v) => { ctrl.pid.kpPhi = v; });
-    bindSlider("pid-kdphi", "v-pidkdphi", (v) => v.toFixed(3), (v) => { ctrl.pid.kdPhi = v; });
-    bindSlider("pid-kiphi", "v-pidkiphi", (v) => v.toFixed(2), (v) => { ctrl.pid.kiPhi = v; });
-    bindSlider("pid-kptheta", "v-pidkptheta", (v) => v.toFixed(3), (v) => { ctrl.pid.kpTheta = v; });
-    bindSlider("pid-kdtheta", "v-pidkdtheta", (v) => v.toFixed(3), (v) => { ctrl.pid.kdTheta = v; });
-
     // swing-up
     bindSlider("p-kE", "v-kE", (v) => v.toFixed(1), (v) => { ctrl.kE = v; });
     bindSlider("p-kArm", "v-kArm", (v) => v.toFixed(3), (v) => { ctrl.kArm = v; });
@@ -321,16 +312,6 @@
     bindSlider("p-capture", "v-capture", (v) => v.toFixed(2) + " rad", (v) => { ctrl.capture = v; });
     bindSlider("p-noise", "v-noise", (v) => v.toFixed(3) + " rad", (v) => { ctrl.noise.level = v; });
 
-    // controller mode
-    document.querySelectorAll("#ctrl-mode .seg-btn").forEach((b) => {
-      b.addEventListener("click", () => {
-        document.querySelectorAll("#ctrl-mode .seg-btn").forEach((x) => x.classList.remove("active"));
-        b.classList.add("active");
-        ctrl.mode = b.dataset.mode;
-        $("lqr-controls").style.display = ctrl.mode === "lqr" ? "block" : "none";
-        $("pid-controls").style.display = ctrl.mode === "pid" ? "block" : "none";
-      });
-    });
     // pump mode
     document.querySelectorAll("#pump-mode .seg-btn").forEach((b) => {
       b.addEventListener("click", () => {
@@ -466,7 +447,7 @@
       kick: () => { if (sim.state) sim.state.phd += sim.kickStrength; },
       setStartMode: (m) => { sim.startMode = m; $("start-mode").value = m; reset(); },
       get gains() { return ctrl.K; },
-      getCfg: () => ({ Q: ctrl.Q.map((r) => r.slice()), R: ctrl.R, mode: ctrl.mode, pump: ctrl.pump, K: ctrl.K.slice() }),
+      getCfg: () => ({ Q: ctrl.Q.map((r) => r.slice()), R: ctrl.R, pump: ctrl.pump, K: ctrl.K.slice() }),
       setSpeed: (v) => { sim.speed = v; $("sim-speed").value = v; $("sim-speed-val").textContent = v.toFixed(2) + "×"; },
       setNoise: (on, lvl) => { ctrl.noise.on = on; if (lvl != null) { ctrl.noise.level = lvl; $("p-noise").value = lvl; } },
       setKick: (v) => { sim.kickStrength = v; },
