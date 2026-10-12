@@ -73,7 +73,7 @@
       }
     }
 
-    // --- fig 1 in the derivation: free coupled swing (arm swings in opposition) ---
+    // --- fig 1 on the system page: the rig, live ---
     const figBox = document.getElementById("fig-system-3d");
     if (figBox) {
       let scene = null;
@@ -268,7 +268,7 @@
   }
 
   function setupReveal() {
-    const els = document.querySelectorAll(".fig-frame, .derivation-block, .build-card, .red-note, .section-head");
+    const els = document.querySelectorAll(".fig-frame, .red-note, .section-head");
     if (!("IntersectionObserver" in window)) return;
     const io = new IntersectionObserver((entries) => {
       entries.forEach((en) => {

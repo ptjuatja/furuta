@@ -1,0 +1,191 @@
+/* ============================================================================
+   feedback.css — styles for feedback.html only.
+
+   Deliberately page-local: this file is not loaded by any other page, so it
+   never competes with css/style.css. It consumes the shared design tokens with
+   fallbacks (var(--accent, #7fd4ff)) so the page keeps its look even if a token
+   is renamed, and inherits any palette change for free.
+   ========================================================================== */
+
+/* This page's place on the shared ramp (home darkest → simulator lightest).
+   Kept here rather than in style.css so it is one less line to collide with. */
+body[data-page="feedback"] { --top: #091a30; --bot: #14305a; }
+
+.fb-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin: 1.4rem 0 0;
+}
+@media (max-width: 900px) {
+  .fb-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.fb-side { display: grid; gap: 1rem; }
+
+.fb-panel {
+  margin: 0;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--line, rgba(255, 255, 255, .14));
+  border-radius: var(--radius, 12px);
+  background: var(--panel, rgba(255, 255, 255, .045));
+}
+.fb-panel .h3 { margin-top: 0; }
+
+/* ---------- form ----------------------------------------------------- */
+
+.fb-form { display: grid; gap: .9rem; }
+
+.fb-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .9rem;
+}
+@media (max-width: 620px) {
+  .fb-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.fb-field { display: grid; gap: .35rem; }
+
+.fb-field > label {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: .66rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--faint, rgba(214, 230, 247, .52));
+}
+.fb-opt {
+  text-transform: none;
+  letter-spacing: 0;
+  color: color-mix(in srgb, var(--faint, #8ea6c0) 82%, transparent);
+}
+
+.fb-input,
+.fb-select,
+.fb-textarea {
+  width: 100%;
+  font: 400 .9rem/1.5 var(--sans, system-ui, sans-serif);
+  color: var(--fg, #fff);
+  background: var(--panel, #FDFBF6);
+  border: 1px solid var(--line, rgba(255, 255, 255, .14));
+  border-radius: var(--radius-sm, 8px);
+  padding: .55rem .65rem;
+  transition: border-color .18s var(--ease, ease), background-color .18s var(--ease, ease);
+}
+.fb-select { cursor: pointer; }
+.fb-textarea { min-height: 10.5rem; resize: vertical; }
+
+.fb-input::placeholder,
+.fb-textarea::placeholder { color: color-mix(in srgb, var(--faint, #8ea6c0) 78%, transparent); }
+
+.fb-input:focus,
+.fb-select:focus,
+.fb-textarea:focus {
+  outline: none;
+  border-color: var(--accent, #7fd4ff);
+  background: var(--paper, #F8F5EF);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #7fd4ff) 16%, transparent);
+}
+
+.fb-input[aria-invalid="true"],
+.fb-textarea[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--hot, #ff8a70) 70%, transparent);
+}
+
+.fb-check {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  font-size: .8rem;
+  line-height: 1.55;
+  color: var(--muted, rgba(233, 242, 252, .74));
+  cursor: pointer;
+}
+.fb-check input { margin: .18rem 0 0; accent-color: var(--accent, #7fd4ff); }
+
+.fb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .1rem; }
+
+.fb-status {
+  margin: 0;
+  min-height: 1.1rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: .72rem;
+  line-height: 1.5;
+  color: var(--faint, rgba(214, 230, 247, .52));
+}
+.fb-status[data-state="ok"] { color: var(--ok, #6ee7a8); }
+.fb-status[data-state="warn"] { color: var(--warn, #ffb066); }
+.fb-status[data-state="err"] { color: var(--hot, #ff8a70); }
+
+/* ---------- side panels ---------------------------------------------- */
+
+.fb-contact { display: grid; gap: .7rem; }
+
+.fb-contact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .5rem .6rem .5rem .7rem;
+  border: 1px solid var(--line, rgba(255, 255, 255, .14));
+  border-radius: var(--radius-sm, 8px);
+  background: var(--paper-deep, #F0EBE0);
+}
+.fb-addr {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: .8rem;
+  color: var(--fg, #fff);
+  word-break: break-all;
+}
+
+.fb-tips {
+  margin: .1rem 0 0;
+  padding-left: 1.05rem;
+  font-size: .82rem;
+  line-height: 1.6;
+  color: var(--muted, rgba(233, 242, 252, .74));
+}
+.fb-tips li { margin-bottom: .3rem; }
+.fb-tips li::marker { color: var(--accent, #7fd4ff); }
+
+.fb-fine {
+  margin: 0;
+  font-size: .74rem;
+  line-height: 1.6;
+  color: var(--faint, rgba(214, 230, 247, .52));
+}
+
+/* ---------- details / disclosure ------------------------------------- */
+
+.fb-details { margin-top: .2rem; }
+.fb-details > summary {
+  cursor: pointer;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--faint, rgba(214, 230, 247, .52));
+}
+.fb-details > summary:hover { color: var(--accent, #7fd4ff); }
+.fb-details[open] > summary { color: var(--accent, #7fd4ff); }
+
+/* ---------- bot trap (visually hidden, still in the DOM) -------------- */
+
+.fb-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* the plain route to the same inbox, always visible (not just without JS) */
+.fb-alt {
+  margin: .8rem 0 0;
+  padding: .7rem .8rem;
+  border: 1px solid var(--line, rgba(255, 255, 255, .14));
+  border-radius: var(--radius-sm, 8px);
+  font-size: .82rem;
+  color: var(--muted, rgba(233, 242, 252, .74));
+}

@@ -22,10 +22,10 @@ function ok(cond, name, extra) {
 /* the five pages, with the section DOM each one is expected to own */
 const PAGES = [
   { file: "index.html", title: /Furuta/i, page: "home", shot: "01-home.png" },
-  { file: "system.html", title: /\u00a71|System/i, page: "system", shot: "07-system.png" },
-  { file: "derivation.html", title: /\u00a72|Derivation/i, page: "derivation", shot: "08-derivation.png" },
-  { file: "build.html", title: /\u00a73|Build/i, page: "build", shot: "09-build.png" },
-  { file: "simulator.html", title: /\u00a74|Simulator/i, page: "simulator", shot: null },
+  { file: "system.html", title: /System/i, page: "system", shot: "07-system.png" },
+  { file: "control.html", title: /Theory/i, page: "control", shot: "08-theory.png" },
+  { file: "simulator.html", title: /Simulator/i, page: "simulator", shot: null },
+  { file: "feedback.html", title: /Feedback/i, page: "feedback", shot: "09-feedback.png" },
 ];
 
 (async () => {
@@ -58,10 +58,8 @@ const PAGES = [
   console.log("\n[2] Each section's figures live on its own page");
   const figures = [
     { file: "index.html", sel: "#hero-3d canvas", name: "hero 3D canvas" },
-    { file: "system.html", sel: "#fig-system-3d canvas", name: "system 3D canvas" },
-    { file: "derivation.html", sel: "#fig-bases svg", name: "basis diagram SVG" },
-    { file: "derivation.html", sel: "#fig-lqr svg", name: "LQR block diagram SVG" },
-    { file: "build.html", sel: "#fig-blueprint svg", name: "blueprint SVG" },
+    { file: "system.html", sel: "#fig-system-3d canvas", name: "rig 3D canvas" },
+    { file: "control.html", sel: "object.pdf-embed", name: "embedded theory PDF" },
     { file: "simulator.html", sel: "#sim-viewport", name: "simulator viewport" },
   ];
   for (const f of figures) {
@@ -73,8 +71,8 @@ const PAGES = [
   for (const spec of PAGES) {
     await page.goto(url(spec.file), { waitUntil: "domcontentloaded" });
     const ids = await page.evaluate(() =>
-      Array.from(document.querySelectorAll("main section")).map((s) => s.id));
-    if (spec.page === "home") ok(ids.length === 0, "home has no section blocks", ids);
+      Array.from(document.querySelectorAll("main section")).map((s) => s.id).filter(Boolean));
+    if (spec.page === "home") ok(ids.length === 0, "home has no section anchors", ids);
     else ok(ids.length === 1 && ids[0] === spec.page, spec.file + " carries only #" + spec.page, ids);
   }
 
@@ -88,8 +86,7 @@ const PAGES = [
       bad: document.querySelectorAll(".math-error").length,
     }));
     ok(m.bad === 0, spec.file + ": no KaTeX render errors (" + m.bad + ")");
-    if (spec.page === "derivation") ok(m.katex > 40, "derivation renders lots of math (" + m.katex + ")");
-    if (spec.page === "system") ok(m.katex > 5, "system renders its math (" + m.katex + ")");
+    if (spec.page === "control") ok(m.katex > 8, "theory page renders its math (" + m.katex + ")");
   }
 
   /* ------------------------------------------------------------------ */
@@ -104,12 +101,16 @@ const PAGES = [
         ? document.querySelector(".nav-cta").getAttribute("href") : null,
       brand: document.querySelector(".nav-brand").getAttribute("href"),
     }));
-    ok(JSON.stringify(nav.links) === JSON.stringify(["system.html", "derivation.html", "build.html"]),
-      spec.file + ": nav links are the three section pages", nav.links);
+    /* the simulator adds its own entry; every other page lists the three */
+    const wantLinks = spec.page === "simulator"
+      ? ["system.html", "control.html", "feedback.html", "simulator.html"]
+      : ["system.html", "control.html", "feedback.html"];
+    ok(JSON.stringify(nav.links) === JSON.stringify(wantLinks),
+      spec.file + ": nav links are the site pages", nav.links);
     ok(nav.cta === "simulator.html", spec.file + ": CTA opens the simulator", nav.cta);
-    ok(nav.drawer.indexOf("simulator.html") >= 0 && nav.drawer.length === 4,
-      spec.file + ": drawer links all four sections", nav.drawer);
-    const expectActive = ["system", "derivation", "build"].indexOf(spec.page) >= 0
+    ok(JSON.stringify(nav.drawer) === JSON.stringify(["system.html", "control.html", "feedback.html", "simulator.html"]),
+      spec.file + ": drawer links every page", nav.drawer);
+    const expectActive = ["system", "control", "feedback", "simulator"].indexOf(spec.page) >= 0
       ? [spec.page + ".html"] : [];
     ok(JSON.stringify(nav.active) === JSON.stringify(expectActive),
       spec.file + ": current page marked in nav", nav.active);
@@ -130,8 +131,8 @@ const PAGES = [
   await page.goto(url("index.html"), { waitUntil: "domcontentloaded" });
   ok(/system\.html$/.test(await navTo('.nav-links a[href="system.html"]')),
     "clicking 'System' navigates to system.html");
-  ok(/build\.html$/.test(await navTo('.nav-links a[href="build.html"]')),
-    "clicking 'Build Guide' navigates to build.html");
+  ok(/control\.html$/.test(await navTo('.nav-links a[href="control.html"]')),
+    "clicking 'Theory' navigates to control.html");
   ok(/simulator\.html$/.test(await navTo(".nav-cta")),
     "clicking the CTA navigates to simulator.html");
 
@@ -142,10 +143,71 @@ const PAGES = [
     const bad = await page.evaluate(() =>
       Array.from(document.querySelectorAll("a[href]"))
         .map((a) => a.getAttribute("href"))
-        .filter((h) => ["#system", "#derivation", "#build", "#simulator"].indexOf(h) >= 0));
+        .filter((h) => ["#system", "#simulator"].indexOf(h) >= 0));
     if (bad.length) stale.push(spec.file + ": " + bad.join(","));
   }
   ok(stale.length === 0, "no section anchors left pointing within a page", stale);
+
+  /* no links to pages that no longer exist */
+  const dead = [];
+  for (const spec of PAGES) {
+    await page.goto(url(spec.file), { waitUntil: "domcontentloaded" });
+    const bad = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("a[href]"))
+        .map((a) => a.getAttribute("href"))
+        .filter((h) => /^[a-z-]+\.html$/.test(h) && !["index.html", "system.html", "control.html", "simulator.html", "feedback.html"].includes(h)));
+    if (bad.length) dead.push(spec.file + ": " + bad.join(","));
+  }
+  ok(dead.length === 0, "no links to pages that do not exist", dead);
+
+  /* ------------------------------------------------------------------ */
+  console.log("\n[4b] Feedback page composes a real email");
+  await page.goto(url("feedback.html"), { waitUntil: "networkidle0" });
+  ok(await page.evaluate(() => !!window.__furutaFeedback), "feedback.js exposes its hook");
+  /* intercept the mail hand-off so the URL can be inspected instead of launched */
+  await page.evaluate(() => {
+    window.__mailtos = [];
+    const native = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      const href = this.getAttribute("href") || "";
+      if (href.indexOf("mailto:") === 0) { window.__mailtos.push(href); return; }
+      return native.call(this);
+    };
+  });
+  await page.click("#fb-send");
+  ok(await page.evaluate(() => document.getElementById("fb-status").dataset.state === "err"),
+    "an empty message is refused before any mail is composed");
+  await page.type("#fb-message", "Balance recovers, but the arm drifts about 3 degrees per minute.");
+  await page.type("#fb-email", "ada@example.com");
+  await page.click("#fb-send");
+  const mail = await page.evaluate(() => {
+    const u = new URL((window.__mailtos || [])[0] || "mailto:");
+    return { to: u.pathname, subject: u.searchParams.get("subject"), body: u.searchParams.get("body") || "" };
+  });
+  ok(mail.to === "ptjuatja@outlook.com", "the message is addressed to the owner", mail.to);
+  ok(/^\[Furuta Lab\] /.test(mail.subject || ""), "subject is tagged for filtering", mail.subject);
+  ok(mail.body.indexOf("arm drifts about 3 degrees") >= 0, "the typed message is in the body");
+  ok(mail.body.indexOf("ada@example.com") >= 0, "the reply address is in the body");
+
+
+  /* the theory page must actually serve the paper, not just link to it */
+  console.log("\n[4c] Theory page embeds the report");
+  await page.goto(url("control.html"), { waitUntil: "networkidle0" });
+  const pdf = await page.evaluate(async () => {
+    const o = document.querySelector("object.pdf-embed");
+    const dl = document.querySelector('.pdf-actions a[download]');
+    const href = dl && dl.getAttribute("href");
+    let status = 0, bytes = 0;
+    if (href) {
+      const r = await fetch(href, { method: "GET" });
+      status = r.status;
+      bytes = (await r.blob()).size;
+    }
+    return { embed: !!o, data: o && o.getAttribute("data"), href, status, bytes };
+  });
+  ok(pdf.embed && pdf.href === "theory/main.pdf", "theory page embeds theory/main.pdf", pdf);
+  ok(pdf.status === 200 && pdf.bytes > 100000,
+    "the PDF is served and is a real document (" + pdf.bytes + " bytes)");
 
   /* ------------------------------------------------------------------ */
   console.log("\n[5] Simulator booted");

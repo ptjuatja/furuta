@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>&#167;5 Feedback &amp; contact — Furuta Pendulum Lab</title>
+<meta name="description" content="Send feedback on the Furuta Pendulum Lab simulator, report a bug, or ask about the dynamics and control theory. Messages go straight to ptjuatja@outlook.com." />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="lib/fonts.css" />
+<link rel="stylesheet" href="lib/katex.min.css" />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/feedback.css" />
+</head>
+<body data-page="feedback">
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar" id="navbar">
+  <a class="nav-brand" href="index.html">
+    <img src="assets/logo.svg" alt="" width="26" height="26" />
+    <span class="nav-brand-name"><em>Furuta</em> Pendulum Visualization Lab</span>
+  </a>
+  <div class="nav-links">
+    <a href="system.html">System</a>
+    <a href="control.html">Theory</a>
+    <a href="feedback.html" class="active">Feedback</a>
+  </div>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open simulator &#9654;</a>
+  <button class="nav-burger" id="nav-burger" aria-label="Menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</nav>
+<div class="nav-drawer" id="nav-drawer">
+  <a href="system.html">System</a>
+  <a href="control.html">Theory</a>
+  <a href="feedback.html" class="active">Feedback</a>
+  <a href="simulator.html">Simulator</a>
+</div>
+
+<main id="top">
+
+<!-- ============================= FEEDBACK ============================= -->
+<section class="section section-deep" id="feedback">
+  <div class="section-head">
+    <div>
+      <p class="kicker"> Feedback &amp; contact</p>
+      <h1 class="section-title">Found a bug, or want the rig to do more?</h1>
+      <p class="lede">
+        Feel free to leave a comment through this message form where it will write an email in <strong>your</strong> mail app and address it to
+        <strong>ptjuatja@outlook.com</strong>!
+      </p>
+    </div>
+    <span class="count mono">no server &#183; no tracking</span>
+  </div>
+
+  <div class="fb-layout">
+
+    <!-- ---------------------------- the form ---------------------------- -->
+    <form class="fb-panel fb-form" id="fb-form" novalidate>
+      <h2 class="h3">Write a message</h2>
+
+      <div class="fb-row">
+        <div class="fb-field">
+          <label for="fb-name">Name <span class="fb-opt">(optional)</span></label>
+          <input class="fb-input" id="fb-name" name="name" type="text" autocomplete="name" placeholder="Ada Lovelace" />
+        </div>
+        <div class="fb-field">
+          <label for="fb-email">Your email <span class="fb-opt">(optional, to get a reply)</span></label>
+          <input class="fb-input" id="fb-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
+        </div>
+      </div>
+
+      <div class="fb-row">
+        <div class="fb-field">
+          <label for="fb-topic">Topic</label>
+          <select class="fb-select" id="fb-topic" name="topic">
+            <option>Bug report</option>
+            <option>Physics &amp; math</option>
+            <option>Feature request</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="fb-field">
+          <label for="fb-subject">Subject <span class="fb-opt">(optional)</span></label>
+          <input class="fb-input" id="fb-subject" name="subject" type="text" placeholder="Arm spins up on reset" />
+        </div>
+      </div>
+
+      <div class="fb-field">
+        <label for="fb-message">Message</label>
+        <textarea class="fb-textarea" id="fb-message" name="message" required
+          placeholder="What you expected, what happened instead, and what you were doing at the time."></textarea>
+      </div>
+
+      <label class="fb-check" for="fb-diag">
+        <input type="checkbox" id="fb-diag" name="diag" checked />
+        <span>Append my page, browser and window size — the fastest way to reproduce a bug.</span>
+      </label>
+
+      <!-- bot trap: hidden from people, tempting to scrapers -->
+      <div class="fb-hp" aria-hidden="true">
+        <label for="fb-company">Company</label>
+        <input id="fb-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <div class="fb-actions">
+        <button class="btn btn-primary" type="submit" id="fb-send">Open my mail app</button>
+        <button class="btn btn-ghost" type="button" id="fb-copy">Copy message</button>
+      </div>
+
+      <p class="fb-status" id="fb-status" role="status" aria-live="polite"></p>
+
+      <p class="fb-noscript">
+        No mail app? Write to <a href="mailto:ptjuatja@outlook.com">ptjuatja@outlook.com</a> directly —
+        the address is the whole contact form.
+      </p>
+
+      <details class="fb-details">
+        <summary>What gets sent</summary>
+        <ul class="fb-tips">
+          <li>Your message and subject, word for word.</li>
+          <li>Whatever you filled in: name, reply address, topic.</li>
+          <li>Page URL, browser and window size — only while that box is ticked.</li>
+          <li>Nothing else. There is no server here to store it.</li>
+        </ul>
+      </details>
+    </form>
+
+    <!-- ---------------------------- the aside ---------------------------- -->
+  </div>
+</section>
+
+</main>
+
+<!-- ============================= FOOTER ============================= -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="logo" width="34" height="34" />
+      <p class="footer-mission">See the vector. Then trust the math.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">CREDITS</p>
+      <p class="footer-text">Dynamics notation after Prof. Robert G. Parker's <em>Essential Dynamics</em> (2026) handout. Development assisted by DeepSeek AI.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">LINKS</p>
+      <a href="https://ptjuatja.github.io" target="_blank" rel="noopener">Portfolio</a>
+      <a href="https://www.linkedin.com/in/philiptjuatja" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/ptjuatja" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+  <p class="footer-copy">Developed by @ptjuatja 2026.</p>
+</footer>
+
+<script src="lib/katex.min.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/math.js"></script>
+<script src="js/main.js"></script>
+<script src="js/feedback.js"></script>
+</body>
+</html>

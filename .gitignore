@@ -2,12 +2,12 @@ test/e2e/node_modules/
 node_modules/
 *.log
 
-# LaTeX build artifacts
+# LaTeX build artifacts (theory/main.pdf IS tracked — it is what the site serves)
 *.aux
-*.fdb_latexmk
-*.fls
-*.synctex.gz
-*.toc
-*.out
 *.bbl
 *.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc

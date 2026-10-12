@@ -1,6 +1,6 @@
 /* Visual & kinematic probes: fonts, canvas pixels, renderer-scene consistency.
  *
- * Multi-page: the hero scene lives on index.html, the system figure on
+ * Multi-page: the hero scene lives on index.html, the rig figure on
  * system.html, and the simulator (charts, orbit, presets) on simulator.html —
  * so the probes navigate between pages instead of assuming one long document.
  */
@@ -47,12 +47,10 @@ function ok(cond, name, extra) {
     inter: document.fonts.check('400 16px "Inter"'),
     fraunces: document.fonts.check('600 16px "Fraunces"'),
     plex: document.fonts.check('400 16px "IBM Plex Mono"'),
-    caveat: document.fonts.check('600 16px "Caveat"'),
   }));
   ok(fonts.inter, "Inter loaded");
   ok(fonts.fraunces, "Fraunces loaded");
   ok(fonts.plex, "IBM Plex Mono loaded");
-  ok(fonts.caveat, "Caveat loaded");
 
   console.log("\n[2] Fonts served from local repo (no Google CDN dependency)");
   const fontSrcs = await page.evaluate(() => {
@@ -69,21 +67,53 @@ function ok(cond, name, extra) {
   const styles = await page.evaluate(() => {
     const body = getComputedStyle(document.body);
     const hero = getComputedStyle(document.querySelector(".hero"));
+    const h1 = getComputedStyle(document.querySelector("h1"));
+    const title = getComputedStyle(document.querySelector(".display, .section-title"));
     return {
       bodyBg: body.backgroundColor,
       bodyFont: body.fontFamily.slice(0, 40),
       heroBg: hero.backgroundImage.slice(0, 60),
+      h1Color: h1.color,
+      titleFont: title.fontFamily,
     };
   });
   ok(styles.bodyBg === "rgb(248, 245, 239)", "body background is paper #F8F5EF", styles.bodyBg);
   ok(/linear-gradient/.test(styles.heroBg), "hero uses grid-paper gradients");
-  ok(/Fraunces/.test(styles.bodyFont) || /Inter/.test(styles.bodyFont), "body uses Inter stack", styles.bodyFont);
+  ok(styles.h1Color === "rgb(34, 48, 60)", "headings are ink #22303C", styles.h1Color);
+  ok(/Fraunces/.test(styles.titleFont), "display type is Fraunces", styles.titleFont);
+  ok(/Inter/.test(styles.bodyFont), "body uses Inter stack", styles.bodyFont);
 
+  /* the hero probe must run while index.html is still the loaded page */
   const homeScenes = await sceneStats();
   ok(homeScenes["hero-3d"] && homeScenes["hero-3d"].triangles > 50,
     "hero scene draws geometry (" + JSON.stringify(homeScenes["hero-3d"]) + ")");
 
-  /* ================= system.html: the §1 figure ================= */
+  /* A page-level figure or layout must sit in the same centred column as the
+   * prose blocks. This is a regression guard: an element carrying its own
+   * `margin:` shorthand can otherwise override the auto margins and hug the
+   * left edge of a full-width section. */
+  console.log("\n[3b] Page-level blocks sit in the centred column");
+  for (const spec of [{ file: "system.html", sel: "figure.full-figure" },
+                      { file: "feedback.html", sel: ".fb-layout" },
+                      { file: "simulator.html", sel: ".sim-shell" }]) {
+    await page.goto(url(spec.file), { waitUntil: "networkidle0" });
+    await new Promise((r) => setTimeout(r, 700));
+    const box = await page.evaluate((s) => {
+      const el = document.querySelector(s);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        centre: r.left + r.width / 2 + window.scrollX,
+        vw: document.documentElement.clientWidth,
+        w: Math.round(r.width),
+      };
+    }, spec.sel);
+    const off = box ? box.centre - box.vw / 2 : NaN;
+    ok(box && Math.abs(off) < 2,
+      spec.file + ": " + spec.sel + " is horizontally centred (offset " + (box ? off.toFixed(1) : "n/a") + "px, width " + (box ? box.w : 0) + ")");
+  }
+
+  /* ================= system.html: the rig figure ================= */
   await page.goto(url("system.html"), { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 2000));
 

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Theory — Furuta Pendulum Lab</title>
+<meta name="description" content="The full theory report for the Furuta pendulum: dynamics, LQR in continuous and discrete time, the Riccati iteration, and the implementation that runs in the simulator." />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="stylesheet" href="lib/fonts.css" />
+<link rel="stylesheet" href="lib/katex.min.css" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="control">
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar" id="navbar">
+  <a class="nav-brand" href="index.html">
+    <img src="assets/logo.svg" alt="" width="26" height="26" />
+    <span class="nav-brand-name"><em>Furuta</em> Pendulum Visualization Lab</span>
+  </a>
+  <div class="nav-links">
+    <a href="system.html">System</a>
+    <a href="control.html" class="active">Theory</a>
+    <a href="feedback.html">Feedback</a>
+  </div>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open simulator &#9654;</a>
+  <button class="nav-burger" id="nav-burger" aria-label="Menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</nav>
+<div class="nav-drawer" id="nav-drawer">
+  <a href="system.html">System</a>
+  <a href="control.html" class="active">Theory</a>
+  <a href="feedback.html">Feedback</a>
+  <a href="simulator.html">Simulator</a>
+</div>
+
+<main id="top">
+
+<!-- ============================= THEORY ============================= -->
+<section class="section section-deep" id="control">
+  <div class="section-head">
+    <div>
+      <p class="kicker">Theory &#183; the paper</p>
+      <h1 class="section-title">The full derivation, as written</h1>
+      <p class="lede">
+        The report below is the complete treatment — dynamics, the Riccati iteration, and the
+        implementation — rendered straight from the source. Scroll inside the frame, or open it
+        full screen.
+      </p>
+    </div>
+    <span class="count mono">24 pages &#183; pdflatex</span>
+  </div>
+
+  <div class="derivation-block">
+    <div class="pdf-actions">
+      <a class="btn btn-primary" href="theory/main.pdf" download>Download the PDF</a>
+      <a class="btn btn-ghost" href="theory/main.pdf" target="_blank" rel="noopener">Open in a new tab</a>
+      <span class="pdf-note mono">A rotary self-balancing pendulum through the implementation of LQR control</span>
+    </div>
+    <figure class="full-figure pdf-figure">
+      <object class="pdf-embed" data="theory/main.pdf#view=FitH" type="application/pdf" aria-label="The theory report, 18 pages">
+        <div class="pdf-fallback">
+          <p><strong>Your browser will not display the PDF inline.</strong></p>
+          <p>This is normal on mobile browsers. Use the download button above, or
+          <a href="theory/main.pdf">open the PDF directly</a>.</p>
+        </div>
+      </object>
+      <figcaption class="mono">The paper: dynamics of the inverted pendulum, LQR in continuous and discrete time, the Riccati iteration that solves it, and the implementation in the simulator.</figcaption>
+    </figure>
+  </div>
+
+   <div class="section-head" style="margin-top:2.5rem">
+    <p class="kicker">The main ideas</p>
+    <h2 class="section-title">What the derivation establishes</h2>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="der-title">1 &nbsp;Equations of motion</h3>
+    <p>
+      Lagrange's equations on the two generalised coordinates give a coupled system
+      <span class="math">\mb{M}\ddot{\vb{q}} + \mb{C}\dot{\vb{q}} = \vb{\uptau}</span>, with the
+      mass matrix depending on the pendulum angle because the arm must share angular momentum:
+    </p>
+    <div class="math-display">
+      \mb{M} = \begin{bmatrix} J{}_\theta + B\sin^2\varphi &amp; -L\cos\varphi \\ -L\cos\varphi &amp; J{}_\varphi \end{bmatrix}
+    </div>
+    <div class="math-display">
+      J{}_\theta = m{}_A l{}_B^2 + \tfrac{1}{4} m{}_B l{}_B^2 + {}^B J{}_3, \quad
+      J{}_\varphi = \tfrac{1}{4} m{}_A l{}_A^2 + {}^A J{}_1, \quad
+      L = \tfrac{1}{2} m{}_A l{}_A l{}_B
+    </div>
+    <p>Only bar A carries potential energy, <span class="math">V = m{}_A g \tfrac{l{}_A}{2}\cos\varphi</span>, and the actuator moment is the sole non-conservative term.</p>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="der-title">2 &nbsp;Linearisation about upright</h3>
+    <p>
+      At <span class="math">\vb{q} = \dot{\vb{q}} = \vb{0}</span> the Christoffel matrix vanishes and
+      the model becomes <span class="math">\dot{\vb{x}} = \mb{A}\vb{x} + \mb{B}M(t)</span> with
+      <span class="math">\vb{x} = [\varphi,\ \theta,\ \dot{\varphi},\ \dot{\theta}]^T</span>.
+      Gravity enters through <span class="math">\varphi</span> alone, <span class="math">\theta</span>
+      is a pure integrator, and the pair is controllable (rank 4) — which is what makes an LQR design
+      admissible at all.
+    </p>
+  </div>
+
+  <div class="derivation-block">
+    <h3 class="der-title">3 &nbsp;Swing-up and balance</h3>
+    <p>
+      With one input and two coordinates, no linear law spans the whole state space. The pendulum energy
+      <span class="math">E = \tfrac{1}{2}J{}_\varphi\dot{\varphi}^2 + m{}_A g\tfrac{l{}_A}{2}(\cos\varphi - 1)</span>
+      is pumped by saturating the torque against <span class="math">\operatorname{sgn}(\dot{\varphi}\cos\varphi)</span>
+      until the pendulum is near the top, where a state-feedback law takes over. The two are joined by a
+      finite-state machine with hysteresis.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================= FOOTER ============================= -->
+<footer class="footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="logo" width="34" height="34" />
+      <p class="footer-mission">See the vector. Then trust the math.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">CREDITS</p>
+      <p class="footer-text">Dynamics notation after Prof. Robert G. Parker's <em>Essential Dynamics</em> (2026) handout. Development assisted by DeepSeek AI.</p>
+    </div>
+    <div class="footer-col">
+      <p class="caption mono">LINKS</p>
+      <a href="https://ptjuatja.github.io" target="_blank" rel="noopener">Portfolio</a>
+      <a href="https://www.linkedin.com/in/philiptjuatja" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/ptjuatja" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+  <p class="footer-copy">Developed by @ptjuatja 2026.</p>
+</footer>
+
+<script src="lib/katex.min.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/math.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -203,8 +203,39 @@ console.log("\n[9] Parameter robustness: swing-up + balance across hardware vari
   ok(all, "all 5 hardware variants swing up and balance with recomputed LQR");
 }
 
-console.log("\n[10] Controllability of the upright linearization (rank 4)");
+console.log("\n[9b] Riccati iteration vs an independent dense DARE solve");
 {
+  /* The fixed-point iteration is checked against a method that shares none of
+   * its numerics: the ordered Schur / deflating-subspace solution of the DARE
+   * (Laub 1979), via scipy.linalg.solve_discrete_are in
+   * test/dare-crosscheck.py. That check needs Python + SciPy, so it is
+   * skipped gracefully when unavailable rather than failing the suite. */
+  const { spawnSync } = require("child_process");
+  const path = require("path");
+  const script = path.join(__dirname, "dare-crosscheck.py");
+  const py = spawnSync("python3", [script, "--json"], { encoding: "utf8" });
+  if (py.error || py.status !== 0) {
+    console.log("  - skipped (python3 + scipy not available)");
+  } else {
+    const rows = JSON.parse(py.stdout);
+    for (const r of rows) {
+      ok(
+        r.dK_max < 1e-5,
+        `${r.design}: gain agrees with dense solve to ${r.dK_max.toExponential(2)} in max-norm`
+      );
+      ok(
+        r.residual_returned_relative < 1e-8,
+        `${r.design}: Riccati residual ${r.residual_returned_relative.toExponential(2)} relative to |P|max`
+      );
+      ok(
+        r.poles.every((p) => p.abs < 1),
+        `${r.design}: all ${r.poles.length} closed-loop poles inside the unit disc`
+      );
+    }
+  }
+}
+
+console.log("\n[10] Controllability of the upright linearization (rank 4)");{
   const { A, B } = P.linStateSpace(D);
   const vecs = [];
   let v = B.map((r) => r[0]);

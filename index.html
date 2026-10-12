@@ -4,70 +4,57 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Furuta Pendulum Visualization Lab</title>
-<meta name="description" content="Interactive 3D simulator and derivation for a rotary self-balancing inverted (Furuta) pendulum with LQR control." />
+<meta name="description" content="Dynamics, LQR control theory and an interactive 3D simulator for a rotary self-balancing inverted (Furuta) pendulum." />
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 <link rel="stylesheet" href="lib/fonts.css" />
 <link rel="stylesheet" href="lib/katex.min.css" />
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body data-page="home">
 
 <!-- ============================= NAVBAR ============================= -->
 <nav class="navbar" id="navbar">
   <a class="nav-brand" href="#top">
-    <img src="assets/logo.svg" alt="Furuta Pendulum Lab logo" width="30" height="30" />
-    <span class="nav-brand-name"> <em>Furuta</em> Pendulum Visualization Lab</span>
-    <span class="nav-brand-kicker">ROTARY SELF-BALANCING INVERTED PENDULUM</span>
+    <img src="assets/logo.svg" alt="" width="26" height="26" />
+    <span class="nav-brand-name"><em>Furuta</em> Pendulum Vizualization Lab</span>
   </a>
   <div class="nav-links">
     <a href="system.html">System</a>
-    <a href="derivation.html">Derivation</a>
-    <a href="build.html">Build Guide</a>
+    <a href="control.html">Theory</a>
+    <a href="feedback.html">Feedback</a>
   </div>
-  <a class="btn btn-primary nav-cta" href="simulator.html">Open Simulator &#9654;</a>
+  <a class="btn btn-primary nav-cta" href="simulator.html">Open simulator &#9654;</a>
   <button class="nav-burger" id="nav-burger" aria-label="Menu">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
 </nav>
 <div class="nav-drawer" id="nav-drawer">
   <a href="system.html">System</a>
-  <a href="derivation.html">Derivation</a>
-  <a href="build.html">Build Guide</a>
+  <a href="control.html">Theory</a>
+  <a href="feedback.html">Feedback</a>
   <a href="simulator.html">Simulator</a>
 </div>
 
 <main id="top">
 
 <!-- ============================= HERO ============================= -->
-<header class="hero grid-paper">
+<section class="hero grid-paper">
   <div class="hero-inner">
     <div class="hero-copy">
-      <p class="kicker">@ptjuatja presents</p>
-      <h1 class="display">The <em>Furuta</em> Pendulum Visualization Lab</h1>
-      <p class="hero-sub">
-        Ever wonder how to connect the ideas between dynamics and control? MayThe Furuta pendulum is a classic benchmark in control theory, featuring a rotary arm driven by a single motor that balances an inverted pendulum above it.
-      </p>
-      <p class="hero-sub">
-        A rotary arm driven by a single motor balances an inverted pendulum above it —
-        one input, two angles, a beautiful control problem. This lab walks the full arc:
-        derive the equations of motion, design an <strong>LQR</strong> balance controller with an
-        energy-based swing-up, then fly the whole thing in an interactive 3D simulator.
-      </p>
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> Rotary self-balancing inverted pendulum</p>
+      <h1 class="display">Unstable but how does it <em>balance</em>?</h1>
+      <p class="lede">Dive into the <em>dynamics</em> of the system, its <em>control</em> law and its implementation. </p>
       <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href="simulator.html">Launch the Simulator &#9654;</a>
-        <a class="btn btn-ghost btn-lg" href="derivation.html">Read the Derivation</a>
+        <a class="btn btn-primary btn-lg" href="simulator.html">Launch the simulator</a>
+        <a class="btn btn-ghost btn-lg" href="control.html">Read the dynamics</a>
       </div>
     </div>
     <figure class="hero-figure">
-      <div class="fig-frame" id="hero-3d"><div class="fig-loading mono"></div></div>
-      <figcaption class="mono">Fig. 0 — The system, live. Drag to orbit, scroll to zoom.</figcaption>
+      <div class="fig-frame" id="hero-3d"><div class="fig-loading mono">&hellip;</div></div>
+      <figcaption class="mono">Fig. 0 — swing-up and balance, live. Drag to orbit.</figcaption>
     </figure>
   </div>
-  <p class="red-note">Scroll to further understand the system! ↓</p>
-</header>
-
-
-
+</section>
 </main>
 
 <!-- ============================= FOOTER ============================= -->
@@ -78,26 +65,17 @@
       <p class="footer-mission">See the vector. Then trust the math.</p>
     </div>
     <div class="footer-col">
-      <p class="caption mono">PAGES</p>
-      <a href="system.html">System</a>
-      <a href="derivation.html">Derivation</a>
-      <a href="build.html">Build Guide</a>
-      <a href="simulator.html">Simulator</a>
+      <p class="caption mono">CREDITS</p>
+      <p class="footer-text">Dynamics notation after Prof. Robert G. Parker's <em>Essential Dynamics</em> (2026) handout. Development assisted by DeepSeek AI.</p>
     </div>
     <div class="footer-col">
-      <p class="caption mono">THE MODEL</p>
-      <a href="derivation.html">EoMs (Lagrange)</a>
-      <a href="derivation.html">LQR design</a>
-      <a href="build.html">Swing-up energy control</a>
-      <a href="simulator.html">RK4 @ 1 kHz</a>
-    </div>
-    <div class="footer-col">
-      <p class="caption mono">REFERENCES</p>
-      <p class="footer-text">Notation and style of the dynamics derivation of the system is based on Prof. Robert G. Parker's <em> Essential Dynamics</em> (2026) handout. </p>
-      <p class="footer-text"> Deepseek AI was used in assistance to the development of this project. </p>
+      <p class="caption mono">LINKS</p>
+      <a href="https://ptjuatja.github.io" target="_blank" rel="noopener">Portfolio</a>
+      <a href="https://www.linkedin.com/in/philiptjuatja" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/ptjuatja" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
-  <p class="footer-copy">Furuta Pendulum Lab · a self-balancing inverted pendulum simulator</p>
+  <p class="footer-copy">Developed by @ptjuatja 2026.</p>
 </footer>
 
 <script src="lib/katex.min.js"></script>
